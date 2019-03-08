@@ -21,25 +21,26 @@ public class Board {
 
     public static int[][] transDown = {
             {0, -1},    //left
-            {0, 1},     //right
             {-1, 0},    //left up
-            {1, -1},    //left down
             {-1, 1},    // right up
+            {0, 1},     //right
             {1, 0},     // right down
+            {1, -1},    //left down
     };
     public static int[][] transUp = {
             {0, -1},    //left
-            {0, 1},     //right
             {-1, -1},    //left up
-            {1, 0},    //left down
             {-1, 0},    // right up
+            {0, 1},     //right
             {1, 1},     // right down
+            {1, 0},    //left down
     };
 
-    enum Direction {Left, Right, LeftUp, LeftDown, RightUp, RightDown}
+    enum Direction {Left, LeftUp, RightUp, Right, RightDown, LeftDown}
 
     public static int rows = 9;
     char[][] state;
+    char[][] pre;
 
     public Board() {
         state = new char[rows][rows];
@@ -48,13 +49,17 @@ public class Board {
         }
     }
 
+    public boolean isValidMove(int row, int col, Direction d, int allyN) {
+        return new Board().move(row, col, d, allyN);
+    }
+
     //16 *
     public void move(int row1, int col1, int row2, int col2, Direction d) {
 
     }
 
     // 16 * 6 * 3 = 252
-    public boolean move(int row, int col, Direction d, int n) {
+    public boolean move(int row, int col, Direction d, int allyN) {
         if (!isWithinBoard(row, col)) {
             System.out.println("Invalid: origin out of bound");
             return false;
@@ -68,15 +73,55 @@ public class Board {
             System.out.println("Invalid: suicide forbidden");
             return false;
         }
-        if (n == 1) {
+        if (allyN == 1) {
             if (state[targetCor[0]][targetCor[1]] == '+') {
                 basicMove(row, col, d);
                 return true;
             }
             return tryPush(row, col, d);
         } else {
-            return true;
+            if (state[targetCor[0]][targetCor[1]] != '+') {
+                System.out.println("Invalid: target blocked");
+                return false;
+            }
+            Direction sideStepDirection = getClockwiseNext(d);
+            if (trySideStep(row, col, d, allyN, sideStepDirection)) return true;
+            else {
+                sideStepDirection = getClockwiseNext(sideStepDirection);
+                if (!trySideStep(row, col, d, allyN, sideStepDirection)) {
+                    System.out.println("Invalid: cant bring the ally you want");
+                    return false;
+                }
+                return true;
+            }
         }
+    }
+
+    public boolean trySideStep(int row, int col, Direction d, int allyN, Direction sideStepDire) {
+        int[] ally1Cor = transCell(row, col, sideStepDire);
+        if (!isWithinBoard(ally1Cor[0], ally1Cor[1]) || state[row][col] != state[ally1Cor[0]][ally1Cor[1]])
+            return false;
+        int[] allyTarCor = transCell(ally1Cor[0], ally1Cor[1], d);
+        if (state[allyTarCor[0]][allyTarCor[1]] != '+') {
+            System.out.println("Invalid: ally1 target blocked");
+            return false;
+        }
+        if (allyN == 3) {
+            int[] ally2Cor = transCell(ally1Cor[0], ally1Cor[1], sideStepDire);
+            if (!isWithinBoard(ally2Cor[0], ally2Cor[1]) || state[row][col] != state[ally2Cor[0]][ally2Cor[1]]) {
+                System.out.println("Invalid: not enough ally");
+                return false;
+            }
+            allyTarCor = transCell(ally2Cor[0], ally2Cor[1], d);
+            if (state[allyTarCor[0]][allyTarCor[1]] != '+') {
+                System.out.println("Invalid: ally2 target blocked");
+                return false;
+            }
+            basicMove(ally2Cor[0], ally2Cor[1], d);
+        }
+        basicMove(row, col, d);
+        basicMove(ally1Cor[0], ally1Cor[1], d);
+        return true;
     }
 
     public boolean tryPush(int row, int col, Direction d) {
@@ -202,6 +247,12 @@ public class Board {
                 return LeftDown;
         }
         return null;
+    }
+
+    private Direction getClockwiseNext(Direction direction) {
+        int ordinal = direction.ordinal() + 1;
+        if (ordinal > 5) ordinal = 0;
+        return Direction.values()[ordinal];
     }
 
     public static int rowToCol(int row) {
