@@ -1,5 +1,12 @@
 package sylvartore;
 
+import javafx.event.EventHandler;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+
 import static sylvartore.Board.Direction.*;
 
 /**
@@ -189,6 +196,43 @@ public class Board {
         return new int[]{targetRow, col + transUp[d.ordinal()][1]};
     }
 
+    public void show(UI.Square[][] squares) {
+        int spaces = 4;
+        boolean decre = true;
+        int r = 0, c = 0;
+        for (int row = 0; row < rows; row++) {
+            for (int i = 0; i < spaces; i++) {
+                c++;
+            }
+            for (int col = 0; col < state[row].length - spaces; col++) {
+                char cur = state[row][col];/*
+                if (cur != '+') {
+                    ImageView a = new ImageView(new Image(state[row][col] == '@' ? "white-ball.png" : "black-ball.png"));
+                    a.setFitWidth(80);
+                    a.setFitHeight(80);
+                    squares[r][c].getChildren().add(a);
+                } else {
+                    Circle cir = new Circle();
+                    cir.setRadius(40);
+                    cir.setFill(Color.RED);
+                    squares[r][c].getChildren().add(cir);
+                }*/
+
+                ImageView a = new ImageView(new Image(cur != '+' ? "white-ball.png" : "black-ball.png"));
+                a.setFitWidth(80);
+                a.setFitHeight(80);
+                a.setOnMouseClicked(new Listener(this, row, col));
+                squares[r][c].getChildren().add(a);
+                c++;
+                c++;
+            }
+            spaces += decre ? -1 : 1;
+            if (spaces == 0) decre = false;
+            c = 0;
+            r++;
+        }
+    }
+
     public void print(boolean testMode) {
         int spaces = 4;
         boolean decre = true;
@@ -270,6 +314,23 @@ public class Board {
                 return 6;
             default:
                 return 5;
+        }
+    }
+
+    public class Listener implements EventHandler<MouseEvent> {
+        Board b;
+        int row;
+        int col;
+
+        public Listener(Board b, int row, int col) {
+            this.b = b;
+            this.row = row;
+            this.col = col;
+        }
+
+        @Override
+        public void handle(MouseEvent event) {
+            System.out.println(row + " " + col);
         }
     }
 }

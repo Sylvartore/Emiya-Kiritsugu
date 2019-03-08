@@ -3,8 +3,11 @@ package sylvartore;
 public class Main {
 
     public static void main(String[] args) {
+
         int c = 0;
         Board b = new Board();
+        b.print();
+        /*
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < Board.rowToCol(row); col++) {
                 for (int dir = 0; dir < 6; dir++) {
@@ -14,11 +17,12 @@ public class Main {
                 }
             }
         }
-        System.out.println(c);
+        System.out.println(c);*/
     }
 
     public static void run() {
         Board b = new Board();
+
         b.move(6, 2, Board.Direction.LeftUp, 3);
         b.move(0, 2, Board.Direction.RightDown, 1);
         b.move(1, 3, Board.Direction.RightDown, 1);
