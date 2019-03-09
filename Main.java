@@ -1,7 +1,5 @@
 package sylvartore;
 
-import java.util.Arrays;
-
 public class Main {
 
     public static void debug() {
@@ -15,7 +13,7 @@ public class Main {
                     for (byte allyN = 1; allyN <= 3; allyN++) {
                         if (b.isValidMove(row, col, dir, allyN)
                                 != bb.isValidMove(row - 1, col - 1, Board.Direction.values()[dir], allyN)) {
-                            System.out.println(BitBoard.dimensionReduction[row][col]);
+                            System.out.println(BitBoard.DimensionReduction[row][col]);
                             System.out.println(row + " r/c " + col + " di: " + dir + " n:" + allyN);
                             c++;
                         }
@@ -29,22 +27,44 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        debug();
-        //run();
-        benchMarking();
+        // debug();
+        run();
+        //benchMarking();
 
     }
 
     public static void run() {
-        Board b = new Board();
-        b.move(2, 3, Board.Direction.RightDown, 1);
+        BitBoard b = new BitBoard();
+
+        m(b, 0, BitBoard.RightDown);
         b.print();
+        m(b, 1, BitBoard.RightDown);
+        b.print();
+        m(b, 58, BitBoard.RightUp);
+        b.print();
+        m(b, 7, BitBoard.RightDown);
+        b.print();
+        byte a = m(b, 14, BitBoard.RightDown);
+        b.print();
+        a = m(b, a, BitBoard.RightDown);
+        b.print();
+        a = m(b, a, BitBoard.RightDown);
+        b.print();
+        m(b, 59, BitBoard.RightUp);
+        b.print();
+    }
+
+    public static byte m(BitBoard b, int c, byte d) {
+        byte cell = (byte) c;
+        if (b.isValidMove(BitBoard.DimensionIncrement[cell][0], BitBoard.DimensionIncrement[cell][1], d, (byte) 1)) {
+            b.move(BitBoard.DimensionIncrement[cell][0], BitBoard.DimensionIncrement[cell][1], d, (byte) 1);
+        }
+        return BitBoard.TransitionMatrix[cell][d];
     }
 
     public static void benchMarking() {
         benchMarker1();
         benchMarker2();
-
     }
 
     static void matrixPrinter() {
@@ -90,7 +110,8 @@ public class Main {
             }
         }
         long end = System.nanoTime();
-        System.out.println((double) (end - start) / 1000000 + "ms");
+
+        System.out.println((double) (end - start) / 1000000L + "ms");
         System.out.println(c);
     }
 
@@ -112,7 +133,7 @@ public class Main {
             }
         }
         long end = System.nanoTime();
-        System.out.println((double) (end - start) / 1000000 + "ms");
+        System.out.println((double) (end - start) / 1000000L + "ms");
         System.out.println(c);
     }
 }
