@@ -25,46 +25,32 @@ public class UI extends Application {
         primaryStage.setTitle("Abalone");
         root = new GridPane();
         squares = new Square[20][20];
-        Board b = new Board();
-      /*  Circle e= new Circle();
-        Circle c = new Circle();
-        c.setRadius(70);
-        Pane a = new Pane();
-        a.getChildren().add(c);*/
-
-//        ImageView b = new ImageView(new Image("black-ball.png"));
-//        b.setFitHeight(80);
-//        b.setFitWidth(80);
-//        root.add(b, 1, 0);
-//        ImageView a = new ImageView(new Image("black-ball.png"));
-//        a.setFitHeight(80);
-//        a.setFitWidth(80);
-//        root.add(a, 2, 0);
+        BitBoard1D b = new BitBoard1D();
+        //Board b = new Board();
         for (int i = 0; i < squares.length; i++) {
             for (int j = 0; j < squares.length; j++) {
-                squares[i][j] = new Square(i, j);
+                squares[i][j] = new Square(-1, i, j);
                 root.add(squares[i][j], j, i);
             }
         }
-
-        b.show(squares);
+        b.init(squares);
+        b.show();
         Scene mainScene = new Scene(root, 800, 1000);
         primaryStage.setScene(mainScene);
         primaryStage.show();
     }
 
     class Square extends Pane {
-        int row;
+        int id;
         int col;
+        int row;
 
-        public Square(int row, int col) {
-            this.row = row;
+        public Square(int id, int col, int row) {
+            this.id = id;
             this.col = col;
+            this.row = row;
             setWidth(60);
             setHeight(60);
         }
     }
-
-
-
 }

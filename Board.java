@@ -270,23 +270,16 @@ public class Board {
                 c++;
             }
             for (int col = 0; col < state[row].length - spaces; col++) {
-                char cur = state[row][col];/*
+                char cur = state[row][col];
+                ImageView a;
                 if (cur != '+') {
-                    ImageView a = new ImageView(new Image(state[row][col] == '@' ? "white-ball.png" : "black-ball.png"));
-                    a.setFitWidth(80);
-                    a.setFitHeight(80);
-                    squares[r][c].getChildren().add(a);
-                } else {
-                    Circle cir = new Circle();
-                    cir.setRadius(40);
-                    cir.setFill(Color.RED);
-                    squares[r][c].getChildren().add(cir);
-                }*/
-                ImageView a = new ImageView(new Image(cur != '+' ? "white-ball.png" : "black-ball.png"));
+                    a = new ImageView(new Image(state[row][col] == '@' ? "white-ball.png" : "black-ball.png"));
+                } else a = new ImageView(new Image("empty.png"));
                 a.setFitWidth(80);
                 a.setFitHeight(80);
                 a.setOnMouseClicked(new Listener(this, row, col));
                 squares[r][c].getChildren().add(a);
+                System.out.println(r + " r/c " + c + " : " + cur);
                 c++;
                 c++;
             }

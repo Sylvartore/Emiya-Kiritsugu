@@ -42,20 +42,23 @@ public class Main {
         move(0, BitBoard.RightDown, 1);
         move(1, BitBoard.RightDown, 1);
         move(58, BitBoard.RightUp, 1);
-        move(7, BitBoard.RightDown, 1);
-        byte a = move(14, BitBoard.RightDown, 1);
+//        move(7, BitBoard.RightDown, 1);
+        byte a = move(6, BitBoard.RightDown, 1);
         a = move(a, BitBoard.RightDown, 1);
+         move(47, BitBoard.Right, 1);
         a = move(a, BitBoard.RightDown, 1);
-        move(59, BitBoard.RightUp, 1);
-        move(21, BitBoard.RightDown, 1);
-        a = move(a, BitBoard.Right, 1);
-        a = move(a, BitBoard.RightDown, 1);
-        a = move(45, BitBoard.LeftUp, 3);
-        move(52, BitBoard.LeftUp, 3);
-        a = move(42, BitBoard.LeftDown, 1);
-        a = move(51, BitBoard.RightUp, 1);
-        a = move(a, BitBoard.RightUp, 1);
-       // a = move(a, BitBoard.RightUp, 1);
+        move(45, BitBoard.Right, 1);
+//        a = move(a, BitBoard.RightDown, 1);
+//        move(59, BitBoard.RightUp, 1);
+//        move(21, BitBoard.RightDown, 1);
+//        a = move(a, BitBoard.Right, 1);
+//        a = move(a, BitBoard.RightDown, 1);
+//        a = move(45, BitBoard.LeftUp, 3);
+//        move(52, BitBoard.LeftUp, 3);
+//        a = move(42, BitBoard.LeftDown, 1);
+//        a = move(51, BitBoard.RightUp, 1);
+//        a = move(a, BitBoard.RightUp, 1);
+//       // a = move(a, BitBoard.RightUp, 1);
     }
 
     static byte move(int cell, byte d, int n) {

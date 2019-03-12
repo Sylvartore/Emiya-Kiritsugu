@@ -1,5 +1,13 @@
 package sylvartore;
 
+import javafx.event.EventHandler;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+
+import javax.swing.*;
+import java.util.List;
+
 public class BitBoard1D {
 
     public byte[] standardInitialLayout() {
@@ -26,6 +34,17 @@ public class BitBoard1D {
             "C1", "C2", "C3", "C4", "C5", "C6", "C7",
             "B1", "B2", "B3", "B4", "B5", "B6",
             "A1", "A2", "A3", "A4", "A5"
+    };
+    public static int[][] ui = new int[][]{
+            {0, 4}, {0, 6}, {0, 8}, {0, 10}, {0, 12},
+            {1, 3}, {1, 5}, {1, 7}, {1, 9}, {1, 11}, {1, 13},
+            {2, 2}, {2, 4}, {2, 6}, {2, 8}, {2, 10}, {2, 12}, {2, 14},
+            {3, 1}, {3, 3}, {3, 5}, {3, 7}, {3, 9}, {3, 11}, {3, 13}, {3, 15},
+            {4, 0}, {4, 2}, {4, 4}, {4, 6}, {4, 8}, {4, 10}, {4, 12}, {4, 14}, {4, 16},
+            {5, 1}, {5, 3}, {5, 5}, {5, 7}, {5, 9}, {5, 11}, {5, 13}, {5, 15},
+            {6, 2}, {6, 4}, {6, 6}, {6, 8}, {6, 10}, {6, 12}, {6, 14},
+            {7, 3}, {7, 5}, {7, 7}, {7, 9}, {7, 11}, {7, 13},
+            {8, 4}, {8, 6}, {8, 8}, {8, 10}, {8, 12},
     };
 
 
@@ -105,6 +124,7 @@ public class BitBoard1D {
     byte stateP[];
     private byte black;
     private byte write;
+    UI.Square[][] squares;
 
     public BitBoard1D() {
         state = standardInitialLayout();
@@ -140,10 +160,8 @@ public class BitBoard1D {
         while (++force <= 3 && targetCell != -1 && state[targetCell] == state[cell]) {
             targetCell = TransitionMatrix[targetCell][d];
         }
-
         if (force > 3 || targetCell == -1) return false;
         int[] counterForce = getF(targetCell, d);
-        System.out.println(force + " " + counterForce[1]);
         return force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]);
     }
 
@@ -151,13 +169,13 @@ public class BitBoard1D {
         if (state[cell] == 0) return new int[]{cell, 0};
         byte force = 0;
         byte targetCell = cell;
-        while (targetCell != -1
-                && state[targetCell] == state[cell]
-                && ++force <= 3 && TransitionMatrix[targetCell][d] != -1) {
+        while (targetCell != -1 && ++force <= 3 && TransitionMatrix[targetCell][d] == state[cell]) {
             targetCell = TransitionMatrix[targetCell][d];
         }
-        if (targetCell != -1 && state[targetCell] != 0) {
-            targetCell = TransitionMatrix[targetCell][d];
+        if (targetCell != -1) {
+            if (state[targetCell] != 0) {
+                targetCell = TransitionMatrix[targetCell][d];
+            }
         }
         return new int[]{targetCell, force};
     }
@@ -307,4 +325,71 @@ public class BitBoard1D {
         System.out.println(String.valueOf(sb));
     }
 
+    public void init(UI.Square[][] squares) {
+        this.squares = squares;
+        for (int i = 0; i < state.length; i++) {
+            int[] coordinates = ui[i];
+            squares[coordinates[0]][coordinates[1]].id = i;
+            squares[coordinates[0]][coordinates[1]].setOnMouseClicked(new Listener(this, i));
+        }
+    }
+
+    public void show() {
+        for (UI.Square[] row : squares) {
+            for (UI.Square square : row) {
+                if (square.id != -1) {
+                    ImageView a;
+                    if (state[square.id] == 1) a = new ImageView(new Image("white-ball.png"));
+                    else if (state[square.id] == 10) a = new ImageView(new Image("black-ball.png"));
+                    else a = new ImageView(new Image("empty.png"));
+                    a.setFitWidth(80);
+                    a.setFitHeight(80);
+                    square.getChildren().clear();
+                    square.getChildren().add(a);
+                }
+            }
+        }
+    }
+
+
+    public class Listener implements EventHandler<MouseEvent> {
+        BitBoard1D b;
+        byte id;
+
+        public Listener(BitBoard1D b, int id) {
+            this.b = b;
+            this.id = (byte) id;
+        }
+
+        @Override
+        public void handle(MouseEvent event) {
+            String[] choices = {"Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown"};
+            String direction = (String) JOptionPane.showInputDialog(null, "Direction",
+                    "Direction", JOptionPane.QUESTION_MESSAGE, null,
+                    choices,
+                    choices[0]);
+            byte d = 0;
+            for (byte i = 0; i < choices.length; i++) {
+                if (choices[i].equals(direction)) d = i;
+            }
+            choices = new String[]{"1", "2", "3"};
+
+            String N = (String) JOptionPane.showInputDialog(null, "N",
+                    "N", JOptionPane.QUESTION_MESSAGE, null,
+                    choices,
+                    choices[0]);
+            byte n = 0;
+            for (byte i = 0; i < choices.length; i++) {
+                if (choices[i].equals(N)) n = i;
+            }
+            n++;
+            if (isValidMove(id, d, n)) {
+                move(id, d, n);
+                b.show();
+            } else {
+                System.out.println("Invalid, Cell: " + id + " direction: " + direction + " N: " + N);
+            }
+        }
+
+    }
 }
