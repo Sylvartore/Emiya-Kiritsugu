@@ -6,6 +6,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 
 import javax.swing.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class BitBoard1D {
@@ -123,7 +124,7 @@ public class BitBoard1D {
     byte state[];
     byte stateP[];
     private byte black;
-    private byte write;
+    private byte white;
     UI.Square[][] squares;
 
     public BitBoard1D() {
@@ -131,7 +132,11 @@ public class BitBoard1D {
         stateP = new byte[61];
     }
 
-    public BitBoard1D(int i) {
+    public BitBoard1D(BitBoard1D source) {
+        white = source.white;
+        black = source.black;
+        state = new byte[61];
+        System.arraycopy(source.state, 0, state, 0, source.state.length);
     }
 
     public boolean isValidMove(byte cell, byte d, byte n) {
@@ -224,8 +229,8 @@ public class BitBoard1D {
         while ((prev == to || state[prev] != 0)
                 && (prev != cell)) {
             if (TransitionMatrix[prev][d] == -1) {
-                if (state[prev] == 1) write++;
-                if (state[prev] == 10) black++;
+                if (state[prev] == 1) black++;
+                if (state[prev] == 10) white++;
             }
             state[prev] = state[next];
             prev = next;
@@ -269,6 +274,62 @@ public class BitBoard1D {
             stateP[cell] = p;
         }
         return c;
+    }
+
+    List<BitBoard1D> getAllPossibleMoves(byte side) {
+        List<BitBoard1D> res = new ArrayList<>();
+        for (byte cell = 0; cell < state.length; cell++) {
+            if (state[cell] != side) continue;
+            for (byte dir = 0; dir < 6; dir++) {
+                for (byte n = 1; n <= 3; n++) {
+                    if (isValidMove(cell, dir, n)) {
+                        BitBoard1D copy = new BitBoard1D(this);
+                        copy.move(cell, dir, n);
+                        res.add(copy);
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+
+    BitBoard1D getBestMove() {
+        int max = -7;
+        int depth = 6;
+        BitBoard1D best = null;
+        for (BitBoard1D move : getAllPossibleMoves((byte) 1)) {
+            int utility = min(move, -7, 7, depth - 1);
+            if (max == -7 || utility > max) {
+                max = utility;
+                best = move;
+            }
+        }
+        return best;
+    }
+
+    int min(BitBoard1D b, int alpha, int beta, int depth) {
+        if (depth == 0) return b.white - b.black;
+        int value = 7;
+        for (BitBoard1D move : getAllPossibleMoves((byte) 10)) {
+            int utility = max(move, alpha, beta, depth - 1);
+            if (utility < value) value = utility;
+            if (utility <= alpha) return utility;
+            if (utility < beta) beta = utility;
+        }
+        return value;
+    }
+
+    int max(BitBoard1D b, int alpha, int beta, int depth) {
+        if (depth == 0) return b.white - b.black;
+        int value = -7;
+        for (BitBoard1D move : getAllPossibleMoves((byte) 1)) {
+            int utility = min(move, alpha, beta, depth - 1);
+            if (utility > value) value = utility;
+            if (utility >= beta) return utility;
+            if (utility > alpha) alpha = utility;
+        }
+        return value;
     }
 
     public void printP() {
@@ -330,7 +391,7 @@ public class BitBoard1D {
         for (int i = 0; i < state.length; i++) {
             int[] coordinates = ui[i];
             squares[coordinates[0]][coordinates[1]].id = i;
-            squares[coordinates[0]][coordinates[1]].setOnMouseClicked(new Listener(this, i));
+            squares[coordinates[0]][coordinates[1]].setOnMouseClicked(new Listener(i));
         }
     }
 
@@ -349,15 +410,14 @@ public class BitBoard1D {
                 }
             }
         }
+        System.out.println(white + " w/b " + black);
     }
 
 
     public class Listener implements EventHandler<MouseEvent> {
-        BitBoard1D b;
         byte id;
 
-        public Listener(BitBoard1D b, int id) {
-            this.b = b;
+        public Listener(int id) {
             this.id = (byte) id;
         }
 
@@ -384,8 +444,16 @@ public class BitBoard1D {
             }
             n++;
             if (isValidMove(id, d, n)) {
+                byte moved = state[id];
                 move(id, d, n);
-                b.show();
+                show();
+                if (moved == 10) {
+                    BitBoard1D next = getBestMove();
+                    state = next.state;
+                    white = next.white;
+                    black = next.black;
+                    show();
+                }
             } else {
                 System.out.println("Invalid, Cell: " + id + " direction: " + direction + " N: " + N);
             }
