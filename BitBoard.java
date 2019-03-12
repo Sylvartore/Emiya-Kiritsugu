@@ -189,7 +189,6 @@ public class BitBoard {
                 state[DimensionIncrement[targetCell][0]][DimensionIncrement[targetCell][1]] != 0) {
             targetCell = TransitionMatrix[targetCell][d];
         }
-        if (force == 4) force = 0;
         return new int[]{DimensionIncrement[targetCell][0], DimensionIncrement[targetCell][1], force};
     }
 
@@ -198,13 +197,14 @@ public class BitBoard {
         if (ally1Cell == -1 || state[row][col] != state[DimensionIncrement[ally1Cell][0]][DimensionIncrement[ally1Cell][1]])
             return false;
         byte ally1SsdCell = TransitionMatrix[ally1Cell][d];
-        if (state[DimensionIncrement[ally1SsdCell][0]][DimensionIncrement[ally1SsdCell][1]] != 0) return false;
+        if (ally1SsdCell == -1 || state[DimensionIncrement[ally1SsdCell][0]][DimensionIncrement[ally1SsdCell][1]] != 0)
+            return false;
         if (n == 2) return true;
         byte ally2Cell = TransitionMatrix[ally1Cell][ssd];
         if (ally2Cell == -1 || state[row][col] != state[DimensionIncrement[ally2Cell][0]][DimensionIncrement[ally2Cell][1]])
             return false;
         byte ally2SsdCell = TransitionMatrix[ally2Cell][d];
-        return state[DimensionIncrement[ally2SsdCell][0]][DimensionIncrement[ally2SsdCell][1]] == 0;
+        return ally2SsdCell != -1 && state[DimensionIncrement[ally2SsdCell][0]][DimensionIncrement[ally2SsdCell][1]] == 0;
     }
 
     public void move(byte row, byte col, byte d, byte n) {
@@ -331,6 +331,22 @@ public class BitBoard {
         sb.delete(sb.length() - 11, sb.length());
         sb.append("1 2 3 4 5 ");
         System.out.println(String.valueOf(sb));
+    }
+
+    int countPossibleMoves() {
+        int c = 0;
+        for (byte row = 0; row < state.length; row++) {
+            for (byte col = 0; col < state[row].length; col++) {
+                if (state[row][col] != 11) {
+                    for (byte dir = 0; dir < 6; dir++) {
+                        for (byte allyN = 1; allyN <= 3; allyN++) {
+                            if (isValidMove(row, col, dir, allyN)) c++;
+                        }
+                    }
+                }
+            }
+        }
+        return c;
     }
 
     Set<BitBoard> getAllPossibleMoves(byte current) {

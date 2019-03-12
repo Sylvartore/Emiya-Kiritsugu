@@ -102,11 +102,13 @@ public class BitBoard1D {
     public static final byte[] CounterDirection = new byte[]{3, 4, 5, 0, 1, 2};
 
     byte state[];
+    byte stateP[];
     private byte black;
     private byte write;
 
     public BitBoard1D() {
         state = standardInitialLayout();
+        stateP = new byte[61];
     }
 
     public BitBoard1D(int i) {
@@ -138,8 +140,10 @@ public class BitBoard1D {
         while (++force <= 3 && targetCell != -1 && state[targetCell] == state[cell]) {
             targetCell = TransitionMatrix[targetCell][d];
         }
+
         if (force > 3 || targetCell == -1) return false;
         int[] counterForce = getF(targetCell, d);
+        System.out.println(force + " " + counterForce[1]);
         return force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]);
     }
 
@@ -155,7 +159,6 @@ public class BitBoard1D {
         if (targetCell != -1 && state[targetCell] != 0) {
             targetCell = TransitionMatrix[targetCell][d];
         }
-        if (force == 4) force = 0;
         return new int[]{targetCell, force};
     }
 
@@ -164,13 +167,13 @@ public class BitBoard1D {
         if (ally1Cell == -1 || state[cell] != state[ally1Cell])
             return false;
         byte ally1SsdCell = TransitionMatrix[ally1Cell][d];
-        if (state[ally1SsdCell] != 0) return false;
+        if (ally1SsdCell == -1 || state[ally1SsdCell] != 0) return false;
         if (n == 2) return true;
         byte ally2Cell = TransitionMatrix[ally1Cell][ssd];
         if (ally2Cell == -1 || state[cell] != state[ally2Cell])
             return false;
         byte ally2SsdCell = TransitionMatrix[ally2Cell][d];
-        return state[ally2SsdCell] == 0;
+        return ally2SsdCell != -1 && state[ally2SsdCell] == 0;
     }
 
     public void move(byte cell, byte d, byte n) {
@@ -183,8 +186,7 @@ public class BitBoard1D {
             if (state[targetCell] == 0) {
                 state[targetCell] = state[cell];
                 state[cell] = 0;
-            }
-            inlineMove(cell, targetCell, d);
+            } else inlineMove(cell, targetCell, d);
         } else {
             byte ssd = d;
             if (++ssd == 6) ssd = 0;
@@ -194,8 +196,7 @@ public class BitBoard1D {
         }
     }
 
-    public void inlineMove(byte cell, byte targetCell, byte d) {
-        byte prev = TransitionMatrix[cell][d];
+    public void inlineMove(byte cell, byte prev, byte d) {
         while (prev != -1 && TransitionMatrix[prev][d] != -1 && state[prev] != 0) {
             prev = TransitionMatrix[prev][d];
         }
@@ -235,12 +236,37 @@ public class BitBoard1D {
         return true;
     }
 
+    int countPossibleMoves() {
+        int c = 0;
+        for (byte cell = 0; cell < state.length; cell++) {
+            byte p = 0;
+            for (byte dir = 0; dir < 6; dir++) {
+                for (byte allyN = 1; allyN <= 3; allyN++) {
+                    if (isValidMove(cell, dir, allyN)) {
+                        c++;
+                        p++;
+                    }
+                }
+            }
+            stateP[cell] = p;
+        }
+        return c;
+    }
+
+    public void printP() {
+        print(true);
+    }
+
     public void print() {
+        print(false);
+    }
+
+    public void print(boolean isP) {
         StringBuilder sb = new StringBuilder();
         int spaces = 4, n = 0, m = 5;
         boolean decre = true;
         char x = 'I', y = '9';
-        for (byte aState : state) {
+        for (byte aState : (isP ? stateP : state)) {
             if (n == m) {
                 sb.append('\n');
                 n = 0;
@@ -252,19 +278,23 @@ public class BitBoard1D {
                 }
                 sb.append(x--).append(' ');
             }
-            char a = ' ';
-            switch (aState) {
-                case 0:
-                    a = '+';
-                    break;
-                case 1:
-                    a = '@';
-                    break;
-                case 10:
-                    a = 'O';
-                    break;
+            if (!isP) {
+                char a = ' ';
+                switch (aState) {
+                    case 10:
+                        a = 'O';
+                        break;
+                    case 0:
+                        a = '+';
+                        break;
+                    case 1:
+                        a = '@';
+                        break;
+                }
+                sb.append(a).append(' ');
+            } else {
+                sb.append(aState).append(' ');
             }
-            sb.append(a).append(' ');
             n++;
             if (n == m) {
                 if (n != 9 && !decre) sb.append(y--);
@@ -273,7 +303,7 @@ public class BitBoard1D {
                 spaces += decre ? -1 : 1;
             }
         }
-        sb.append("\n      1 2 3 4 5 ");
+        sb.append("\n      1 2 3 4 5 \n");
         System.out.println(String.valueOf(sb));
     }
 

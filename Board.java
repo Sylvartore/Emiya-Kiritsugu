@@ -90,7 +90,7 @@ public class Board {
             targetCor = transCell(targetCor[0], targetCor[1], d);
         }
         if (state[targetCor[0]][targetCor[1]] != '+') targetCor = transCell(targetCor[0], targetCor[1], d);
-        return new int[]{targetCor[0], targetCor[1], force == 4 ? 0 : force};
+        return new int[]{targetCor[0], targetCor[1], force};
     }
 
     public boolean canSideStep(int row, int col, Direction d, int allyN, Direction sideStepDire) {
@@ -317,9 +317,19 @@ public class Board {
         System.out.println();
     }
 
-
-    public static int[][] transitionMatrix = new int[][]{
-    };
+    public int countPossibleMoves() {
+        int c = 0;
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < rowToCol[row]; col++) {
+                for (int dir = 0; dir < 6; dir++) {
+                    for (int allyN = 1; allyN <= 3; allyN++) {
+                        if (isValidMove(row, col, Direction.values()[dir], allyN)) c++;
+                    }
+                }
+            }
+        }
+        return c;
+    }
 
     public void print() {
         print(false);
