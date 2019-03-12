@@ -1,6 +1,10 @@
 package sylvartore;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class BitBoard {
+
     public byte[][] standardInitialLayout() {
         return new byte[][]{
                 {11, 11, 11, 11, 11, 11},
@@ -126,10 +130,16 @@ public class BitBoard {
     public static final byte[] CounterDirection = new byte[]{3, 4, 5, 0, 1, 2};
 
     byte state[][];
+    private byte black;
+    private byte write;
 
     public BitBoard() {
         state = standardInitialLayout();
     }
+
+    public BitBoard(int i) {
+    }
+
 
     public boolean isValidMove(byte row, byte col, byte d, byte n) {
         return isValidMove(row, col, d, n, state);
@@ -160,11 +170,12 @@ public class BitBoard {
         }
         if (force > 3 || targetCell == -1) return false;
         int[] counterForce = getF(DimensionIncrement[targetCell][0], DimensionIncrement[targetCell][1], d);
-        System.out.println(force + " " + counterForce[2]);
-        return force > counterForce[2] && (state[counterForce[0]][counterForce[1]] != 11
+
+        return force > counterForce[2] && (state[counterForce[0]][counterForce[1]] == 11
                 || state[counterForce[0]][counterForce[1]] != state[row][col]);
     }
 
+    //TODO pruning
     public int[] getF(byte row, byte col, byte d) {
         if (state[row][col] == 11 || state[row][col] == 0) return new int[]{row, col, 0};
         byte force = 0;
@@ -174,8 +185,6 @@ public class BitBoard {
                 && ++force <= 3 && TransitionMatrix[targetCell][d] != -1) {
             targetCell = TransitionMatrix[targetCell][d];
         }
-        System.out.println(force);
-        System.out.println(targetCell);
         if (targetCell != -1 && TransitionMatrix[targetCell][d] != -1 &&
                 state[DimensionIncrement[targetCell][0]][DimensionIncrement[targetCell][1]] != 0) {
             targetCell = TransitionMatrix[targetCell][d];
@@ -209,19 +218,19 @@ public class BitBoard {
                 state[DimensionIncrement[targetCell][0]][DimensionIncrement[targetCell][1]] = state[row][col];
                 state[row][col] = 0;
             } else inlineMove(row, col, d);
+        } else {
+            byte ssd = d;
+            if (++ssd == 6) ssd = 0;
+            if (sideStepMove(row, col, d, n, ssd, targetCell)) return;
+            if (++ssd == 6) ssd = 0;
+            sideStepMove(row, col, d, n, ssd, targetCell);
         }
-//        } else {
-//            byte ssd = d;
-//            if (++ssd == 6) ssd = 0;
-//            if (canSideStep(row, col, d, n, ssd)) return;
-//            if (++ssd == 6) ssd = 0;
-//            canSideStep(row, col, d, n, ssd);
-//        }
     }
 
     public void inlineMove(int row, int col, int d) {
         byte prev = TransitionMatrix[DimensionReduction[row][col]][d];
-        while (prev != -1 && TransitionMatrix[prev][d] != -1 && state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]] != 0) {
+        while (prev != -1 && TransitionMatrix[prev][d] != -1
+                && state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]] != 0) {
             prev = TransitionMatrix[prev][d];
         }
         if (state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]] != 0 && TransitionMatrix[prev][d] != -1)
@@ -230,12 +239,53 @@ public class BitBoard {
         byte to = prev;
         while ((prev == to || state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]] != 0)
                 && (DimensionIncrement[prev][0] != row || DimensionIncrement[prev][1] != col)) {
-            if (prev != -1) state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]]
+            if (TransitionMatrix[prev][d] == -1) {
+                if (state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]] == 1) write++;
+                if (state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]] == 10) black++;
+            }
+            state[DimensionIncrement[prev][0]][DimensionIncrement[prev][1]]
                     = state[DimensionIncrement[next][0]][DimensionIncrement[next][1]];
             prev = next;
             next = TransitionMatrix[prev][CounterDirection[d]];
         }
         state[row][col] = 0;
+    }
+
+
+    public boolean sideStepMove(byte row, byte col, byte d, byte n, byte ssd, byte targetCell) {
+        byte ally1Cell = TransitionMatrix[DimensionReduction[row][col]][ssd];
+        if (ally1Cell == -1 || state[row][col] != state[DimensionIncrement[ally1Cell][0]][DimensionIncrement[ally1Cell][1]])
+            return false;
+        byte ally1SsdCell = TransitionMatrix[ally1Cell][d];
+        if (state[DimensionIncrement[ally1SsdCell][0]][DimensionIncrement[ally1SsdCell][1]] != 0) return false;
+        if (n == 3) {
+            byte ally2Cell = TransitionMatrix[ally1Cell][ssd];
+            if (ally2Cell == -1 || state[row][col] != state[DimensionIncrement[ally2Cell][0]][DimensionIncrement[ally2Cell][1]])
+                return false;
+            byte ally2SsdCell = TransitionMatrix[ally2Cell][d];
+            if (state[DimensionIncrement[ally2SsdCell][0]][DimensionIncrement[ally2SsdCell][1]] != 0) return false;
+            state[DimensionIncrement[ally2SsdCell][0]][DimensionIncrement[ally2SsdCell][1]]
+                    = state[DimensionIncrement[ally2Cell][0]][DimensionIncrement[ally2Cell][1]];
+            state[DimensionIncrement[ally2Cell][0]][DimensionIncrement[ally2Cell][1]] = 0;
+        }
+        state[DimensionIncrement[targetCell][0]][DimensionIncrement[targetCell][1]] = state[row][col];
+        state[row][col] = 0;
+        state[DimensionIncrement[ally1SsdCell][0]][DimensionIncrement[ally1SsdCell][1]]
+                = state[DimensionIncrement[ally1Cell][0]][DimensionIncrement[ally1Cell][1]];
+        state[DimensionIncrement[ally1Cell][0]][DimensionIncrement[ally1Cell][1]] = 0;
+        return true;
+    }
+
+    public BitBoard copy() {
+        BitBoard copy = new BitBoard(0);
+        copy.state = new byte[state.length][];
+        for (int i = 0; i < state.length; i++) {
+            copy.state[i] = new byte[state[i].length];
+            System.arraycopy(state[i], 0, copy.state[i], 0, state[i].length);
+        }
+        copy.black = black;
+        copy.write = write;
+        return copy;
     }
 
     public byte[][] deepCopy() {
@@ -250,12 +300,15 @@ public class BitBoard {
     public void print() {
         int spaces = 5;
         boolean decre = true;
+        char x = 'I';
+        char y = '9';
         StringBuilder sb = new StringBuilder();
         for (byte row = 0; row < state.length; row++) {
             for (int i = 0; i < spaces; i++) {
                 sb.append(" ");
             }
-            for (byte col = 0; col < state[row].length; col++) {
+            if (row > 0 && row < 10) sb.append(x--);
+            for (byte col = 0; col < state[row].length - 1; col++) {
                 char a = ' ';
                 switch (state[row][col]) {
                     case 0:
@@ -270,37 +323,70 @@ public class BitBoard {
                 }
                 sb.append(a).append(' ');
             }
+            if (row != 5 && !decre) sb.append(' ').append(y--);
             sb.append('\n');
             spaces += decre ? -1 : 1;
             if (spaces == 0) decre = false;
         }
+        sb.delete(sb.length() - 11, sb.length());
+        sb.append("1 2 3 4 5 ");
         System.out.println(String.valueOf(sb));
     }
 
-    public byte[] standardInitialLayout1D() {
-        return new byte[]{
-                01, 01, 01, 01, 01,
-                01, 01, 01, 01, 01, 01,
-                00, 00, 01, 01, 01, 00, 00,
-                00, 00, 00, 00, 00, 00, 00, 00,
-                00, 00, 00, 00, 00, 00, 00, 00, 00,
-                00, 00, 00, 00, 00, 00, 00, 00,
-                00, 00, 10, 10, 10, 00, 00,
-                10, 10, 10, 10, 10, 10,
-                10, 10, 10, 10, 10,
-        };
+    Set<BitBoard> getAllPossibleMoves(byte current) {
+        Set<BitBoard> ans = new HashSet<>();
+        for (byte row = 0; row < state.length; row++) {
+            for (byte col = 0; col < state[row].length; col++) {
+                if (state[row][col] == current) {
+                    for (byte dir = 0; dir < 6; dir++) {
+                        for (byte n = 1; n <= 3; n++) {
+                            if (isValidMove(row, col, dir, n)) {
+                                BitBoard newPoss = copy();
+                                newPoss.move(row, col, dir, n);
+                                ans.add(newPoss);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return ans;
     }
 
-    public static String[] toStandardNotation1D = new String[]{
-            "I5", "I6", "I7", "I8", "I9",
-            "H4", "H5", "H6", "H7", "H8", "H9",
-            "G3", "G4", "G5", "G6", "G7", "G8", "G9",
-            "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9",
-            "E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9",
-            "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8",
-            "C1", "C2", "C3", "C4", "C5", "C6", "C7",
-            "B1", "B2", "B3", "B4", "B5", "B6",
-            "A1", "A2", "A3", "A4", "A5"
-    };
+//    public BitBoard getBestMove(byte current) {
+//        byte best = -10;
+//        byte depth = 3;
+//        BitBoard bestMove = copy();
+//        Set<BitBoard> moves = bestMove.getAllPossibleMoves(current);
+//        for (BitBoard m : moves) {
+//            byte score = alphaBeta(m, current == 1 ? (byte) 10 : (byte) 1, --depth, (byte) -10, (byte) 10,current);
+//            if (score > best) {
+//                best = score;
+//                bestMove = m;
+//            }
+//        }
+//        return bestMove;
+//    }
+//
+//    private byte alphaBeta(BitBoard state, byte oppo, byte depth, byte alpha, byte beta, byte root) {
+//        if (depth > 0) {
+//            byte best = beta;
+//            for (BitBoard m : state.getAllPossibleMoves(oppo)) {
+//                byte score = -alphaBeta(m, oppo == 1 ? (byte) 10 : (byte) 1, --depth, best, alpha);
+//                if (alpha < score && score < beta)
+//                    score = -alphaBeta(board, oppo.other(), depth - 1, -beta, -alpha);
+//                alpha = Math.max(alpha, score);
+//                if (alpha >= beta)
+//                    return alpha;
+//                best = alpha + 1;
+//                board.revert(m);
+//            }
+//            return best;
+//        } else {
+//            return (root == 1?state.black:state.write);
+//        }
+//    }
+//
+
 
 }

@@ -23,44 +23,6 @@ import static sylvartore.Board.Direction.*;
 
 public class Board {
 
-    public static String[][] toStandardNotation = new String[][]{
-            {"I5", "I6", "I7", "I8", "I9"},
-            {"H4", "H5", "H6", "H7", "H8", "H9"},
-            {"G3", "G4", "G5", "G6", "G7", "G8", "G9"},
-            {"F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9"},
-            {"E1", "E2", "E3", "E4", "E5", "E6", "E7", "E8", "E9"},
-            {"D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"},
-            {"C1", "C2", "C3", "C4", "C5", "C6", "C7"},
-            {"B1", "B2", "B3", "B4", "B5", "B6"},
-            {"A1", "A2", "A3", "A4", "A5"},
-    };
-
-    public static int[][] dimensionReduction = new int[][]{
-            {0, 1, 2, 3, 4},
-            {5, 6, 7, 8, 9, 10},
-            {11, 12, 13, 14, 15, 16, 17,},
-            {18, 19, 20, 21, 22, 23, 24, 25,},
-            {26, 27, 28, 29, 30, 31, 32, 33, 34},
-            {35, 36, 37, 38, 39, 40, 41, 42},
-            {43, 44, 45, 46, 47, 48, 49},
-            {50, 51, 52, 53, 54, 55},
-            {56, 57, 58, 59, 60}
-    };
-
-    public static boolean[][] isOutOfBound = new boolean[][]{
-            {true, true, true, true, true, true, true, true, true, true, true},
-            {true, false, false, false, false, false, true, true, true, true, true},
-            {true, false, false, false, false, false, false, true, true, true, true},
-            {true, false, false, false, false, false, false, false, true, true, true},
-            {true, false, false, false, false, false, false, false, false, true, true},
-            {true, false, false, false, false, false, false, false, false, false, true},
-            {true, false, false, false, false, false, false, false, false, true, true},
-            {true, false, false, false, false, false, false, false, true, true, true},
-            {true, false, false, false, false, false, false, true, true, true, true},
-            {true, false, false, false, false, false, true, true, true, true, true},
-            {true, true, true, true, true, true, true, true, true, true, true}
-    };
-
     public static int[][] transDown = {
             {0, -1},    //left
             {-1, 0},    //left up
