@@ -4,19 +4,29 @@ public class Main {
 
     public static void debug() {
         int c = 0;
-        BitBoard b = new BitBoard();
-        Board bb = new Board();
+//        BitBoard b = new BitBoard();
+//        Board bb = new Board();
         long start = System.nanoTime();
-        for (byte row = 0; row < 9; row++) {
-            for (byte col = 0; col < Board.rowToCol[row]; col++) {
-                for (byte dir = 0; dir < 6; dir++) {
-                    for (byte allyN = 1; allyN <= 3; allyN++) {
-                        if (b.isValidMove(row, col, dir, allyN)
-                                != bb.isValidMove(row - 1, col - 1, Board.Direction.values()[dir], allyN)) {
-                            System.out.println(BitBoard.DimensionReduction[row][col]);
-                            System.out.println(row + " r/c " + col + " di: " + dir + " n:" + allyN);
-                            c++;
-                        }
+//        for (byte row = 0; row < 9; row++) {
+//            for (byte col = 0; col < Board.rowToCol[row]; col++) {
+//                for (byte dir = 0; dir < 6; dir++) {
+//                    for (byte allyN = 1; allyN <= 3; allyN++) {
+//                        if (b.isValidMove(row, col, dir, allyN)
+//                                != bb.isValidMove(row - 1, col - 1, Board.Direction.values()[dir], allyN)) {
+//                            System.out.println(BitBoard.DimensionReduction[row][col]);
+//                            System.out.println(row + " r/c " + col + " di: " + dir + " n:" + allyN);
+//                            c++;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+        for (byte cell = 0; cell < 61; cell++) {
+            for (byte dir = 0; dir < 6; dir++) {
+                for (byte n = 1; n <= 3; n++) {
+                    if (b1.isValidMove(cell, dir, n) != b1.tableSideStepMove(cell, dir, n)) {
+                        System.out.println(cell + " : " + " dir: " + dir + " n:" + n);
+                        c++;
                     }
                 }
             }
@@ -27,10 +37,32 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        // debug();
+        for (int i = 0; i < 61; i++) {
+            System.out.println(i + " " +
+                    (i == BitBoard1D.standardNotationToCell(BitBoard1D.toStandardNotation[i])));
+            if (i != BitBoard1D.standardNotationToCell(BitBoard1D.toStandardNotation[i])) {
+                System.out.println(BitBoard1D.standardNotationToCell(BitBoard1D.toStandardNotation[i]));
+            }
+        }
+
+        //  debug();
         // run();
-        // benchMarking();
-        run2();
+        //  benchMarking();
+        //run2();
+//        System.out.println(BitBoard1D.ally1[21][2]);
+//        System.out.println(BitBoard1D.ally2[21][2]);
+//        System.out.println(BitBoard1D.ally3[21][2]);
+//        System.out.println(BitBoard1D.ally4[21][2]);
+    }
+
+    static void printer() {
+        for (byte i = 0; i < b1.state.length; i++) {
+            System.out.print("{");
+            for (byte j = 0; j < 6; j++) {
+                System.out.print(b1.printTable(i, j) + ", ");
+            }
+            System.out.println("},");
+        }
     }
 
     static BitBoard1D b1 = new BitBoard1D();
@@ -45,20 +77,20 @@ public class Main {
 //        move(7, BitBoard.RightDown, 1);
         byte a = move(6, BitBoard.RightDown, 1);
         a = move(a, BitBoard.RightDown, 1);
-         move(47, BitBoard.Right, 1);
+        move(47, BitBoard.Right, 1);
         a = move(a, BitBoard.RightDown, 1);
         move(45, BitBoard.Right, 1);
-//        a = move(a, BitBoard.RightDown, 1);
+//        a.txt = move(a.txt, BitBoard.RightDown, 1);
 //        move(59, BitBoard.RightUp, 1);
 //        move(21, BitBoard.RightDown, 1);
-//        a = move(a, BitBoard.Right, 1);
-//        a = move(a, BitBoard.RightDown, 1);
-//        a = move(45, BitBoard.LeftUp, 3);
+//        a.txt = move(a.txt, BitBoard.Right, 1);
+//        a.txt = move(a.txt, BitBoard.RightDown, 1);
+//        a.txt = move(45, BitBoard.LeftUp, 3);
 //        move(52, BitBoard.LeftUp, 3);
-//        a = move(42, BitBoard.LeftDown, 1);
-//        a = move(51, BitBoard.RightUp, 1);
-//        a = move(a, BitBoard.RightUp, 1);
-//       // a = move(a, BitBoard.RightUp, 1);
+//        a.txt = move(42, BitBoard.LeftDown, 1);
+//        a.txt = move(51, BitBoard.RightUp, 1);
+//        a.txt = move(a.txt, BitBoard.RightUp, 1);
+//       // a.txt = move(a.txt, BitBoard.RightUp, 1);
     }
 
     static byte move(int cell, byte d, int n) {
@@ -67,7 +99,7 @@ public class Main {
             b.move(BitBoard.DimensionIncrement[cell][0], BitBoard.DimensionIncrement[cell][1], d, (byte) n);
         }
         if (b1.isValidMove(c, d, (byte) n)) b1.move(c, d, (byte) n);
-      //  System.out.println(b.countPossibleMoves() + " / " + b1.countPossibleMoves());
+        //  System.out.println(b.countPossibleMoves() + " / " + b1.countPossibleMoves());
         b1.print();
         //  b1.printP();
         return BitBoard1D.TransitionMatrix[cell][d];
@@ -112,10 +144,10 @@ public class Main {
     }
 
     public static void benchMarking() {
+        benchMarker4();
         benchMarker3();
-        benchMarker2();
-        benchMarker1();
-
+//        benchMarker2();
+//        benchMarker1();
     }
 
     public static void benchMarker1() {
@@ -127,7 +159,8 @@ public class Main {
                 for (int col = 0; col < Board.rowToCol[row]; col++) {
                     for (int dir = 0; dir < 6; dir++) {
                         for (int allyN = 1; allyN <= 3; allyN++) {
-                            if (b.isValidMove(row, col, Board.Direction.values()[dir], allyN)) c++;
+                            if (b.isValidMove(row, col, Board.Direction.values()[dir], allyN))
+                                if (i == 0) c++;
                         }
                     }
                 }
@@ -149,7 +182,8 @@ public class Main {
                     if (b.state[row][col] != 11) {
                         for (byte dir = 0; dir < 6; dir++) {
                             for (byte allyN = 1; allyN <= 3; allyN++) {
-                                if (b.isValidMove(row, col, dir, allyN)) c++;
+                                if (b.isValidMove(row, col, dir, allyN))
+                                    if (i == 0) c++;
                             }
                         }
                     }
@@ -169,7 +203,27 @@ public class Main {
             for (byte cell = 0; cell < b.state.length; cell++) {
                 for (byte dir = 0; dir < 6; dir++) {
                     for (byte allyN = 1; allyN <= 3; allyN++) {
-                        if (b.isValidMove(cell, dir, allyN)) c++;
+                        if (b.isValidMove(cell, dir, allyN))
+                            if (i == 0) c++;
+                    }
+                }
+            }
+        }
+        long end = System.nanoTime();
+        System.out.println((double) (end - start) / 1000000L + "ms");
+        System.out.println(c);
+    }
+
+    public static void benchMarker4() {
+        int c = 0;
+        BitBoard1D b = new BitBoard1D();
+        long start = System.nanoTime();
+        for (int i = 0; i < 10000; i++) {
+            for (byte cell = 0; cell < b.state.length; cell++) {
+                for (byte dir = 0; dir < 6; dir++) {
+                    for (byte allyN = 1; allyN <= 3; allyN++) {
+                        if (b.tableSideStepMove(cell, dir, allyN))
+                            if (i == 0) c++;
                     }
                 }
             }

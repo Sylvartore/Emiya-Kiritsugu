@@ -11,7 +11,7 @@ import java.util.List;
 
 public class BitBoard1D {
 
-    public byte[] standardInitialLayout() {
+    public byte[] getStandardInitialLayout() {
         return new byte[]{
                 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1,
@@ -22,6 +22,34 @@ public class BitBoard1D {
                 0, 0, 10, 10, 10, 0, 0,
                 10, 10, 10, 10, 10, 10,
                 10, 10, 10, 10, 10,
+        };
+    }
+
+    public byte[] getGermanDaisyLayout() {
+        return new byte[]{
+                0, 0, 0, 0, 0,
+                10, 10, 0, 0, 1, 1,
+                10, 10, 10, 0, 1, 1, 1,
+                0, 10, 10, 0, 0, 1, 1, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 1, 0, 0, 10, 10, 0,
+                1, 1, 1, 0, 10, 10, 10,
+                1, 1, 0, 0, 10, 10,
+                0, 0, 0, 0, 0
+        };
+    }
+
+    public byte[] getBelgianDaisyLayout() {
+        return new byte[]{
+                10, 10, 0, 1, 1,
+                10, 10, 10, 1, 1, 1,
+                0, 10, 10, 0, 1, 1, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0,
+                0, 1, 1, 0, 10, 10, 0,
+                1, 1, 1, 10, 10, 10,
+                1, 1, 0, 10, 10
         };
     }
 
@@ -128,7 +156,7 @@ public class BitBoard1D {
     UI.Square[][] squares;
 
     public BitBoard1D() {
-        state = standardInitialLayout();
+        state = new byte[61];//getStandardInitialLayout();
         stateP = new byte[61];
     }
 
@@ -137,6 +165,62 @@ public class BitBoard1D {
         black = source.black;
         state = new byte[61];
         System.arraycopy(source.state, 0, state, 0, source.state.length);
+    }
+
+    public void tryMove(final byte cell, final byte d, final byte n) {
+        if (state[cell] == 0) return;
+        byte targetCell = TransitionMatrix[cell][d];
+        if (targetCell == -1) return;
+        if (n == 1) {
+            if (state[targetCell] == 0) {
+                state[targetCell] = state[cell];
+                state[cell] = 0;
+                return;
+            }
+            //         } else {
+//                byte prev = targetCell;
+//                while (prev != -1 && TransitionMatrix[prev][d] != -1 && state[prev] != 0) {
+//                    prev = TransitionMatrix[prev][d];
+//                }
+//                if (state[prev] != 0 && TransitionMatrix[prev][d] != -1) prev = TransitionMatrix[prev][d];
+//                byte next = TransitionMatrix[prev][CounterDirection[d]];
+//                byte to = prev;
+//                while ((prev == to || state[prev] != 0)
+//                        && (prev != cell)) {
+//                    if (TransitionMatrix[prev][d] == -1) {
+//                        if (state[prev] == 1) black++;
+//                        if (state[prev] == 10) white++;
+//                    }
+//                    state[prev] = state[next];
+//                    prev = next;
+//                    next = TransitionMatrix[prev][CounterDirection[d]];
+//                }
+//                state[cell] = 0;
+//            }
+//        } else {
+//            if (state[targetCell] != 0) return false;
+//            byte ssd = d;
+//            if (++ssd == 6) ssd = 0;
+//            if (canSideStep(cell, d, n, ssd)) return true;
+//            if (++ssd == 6) ssd = 0;
+//            return canSideStep(cell, d, n, ssd);
+        }
+    }
+
+    public static final byte[] table = new byte[]{55, 49, 42, 34, 25, 16, 8, 1, -5};
+
+    public static byte standardNotationToCell(String str) {
+        char[] ca = str.toLowerCase().toCharArray();
+        if (ca[0] < 'a' || ca[0] > 'i' || ca[1] < '1' || ca[1] > '9') return -1;
+        int a = ca[0] - 'a';
+        int b = ca[1] - '0';
+        return (byte) (table[a] + b);
+    }
+
+    public void readState(String str) {
+        char[] ca = str.toLowerCase().toCharArray();
+        if (ca[0] < 'a' || ca[0] > 'i' || ca[1] < '1' || ca[1] > '9' || ca[2] != 'w' && ca[2] != 'b') return;
+        state[table[ca[0] - 'a'] + ca[1] - '0'] = ca[2] == 'w' ? (byte) 1 : (byte) 10;
     }
 
     public boolean isValidMove(byte cell, byte d, byte n) {
@@ -160,25 +244,33 @@ public class BitBoard1D {
         }
     }
 
+    public byte printTable(byte cell, byte d) {
+        byte ssd = d;
+        if (++ssd == 6) ssd = 0;
+        if (++ssd == 6) ssd = 0;
+        return TransitionMatrix[cell][ssd];
+    }
+
+
     public boolean canInline(byte cell, byte targetCell, byte d) {
         byte force = 0;
         while (++force <= 3 && targetCell != -1 && state[targetCell] == state[cell]) {
             targetCell = TransitionMatrix[targetCell][d];
         }
         if (force > 3 || targetCell == -1) return false;
-        int[] counterForce = getF(targetCell, d);
+        int[] counterForce = getForce(targetCell, d);
         return force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]);
     }
 
-    public int[] getF(byte cell, byte d) {
+    public int[] getForce(byte cell, byte d) {
         if (state[cell] == 0) return new int[]{cell, 0};
         byte force = 0;
         byte targetCell = cell;
-        while (targetCell != -1 && ++force <= 3 && TransitionMatrix[targetCell][d] == state[cell]) {
+        while (targetCell != -1 && state[targetCell] == state[cell] && ++force <= 3) {
             targetCell = TransitionMatrix[targetCell][d];
         }
         if (targetCell != -1) {
-            if (state[targetCell] != 0) {
+            if (state[targetCell] == state[cell]) {
                 targetCell = TransitionMatrix[targetCell][d];
             }
         }
@@ -259,6 +351,36 @@ public class BitBoard1D {
         return true;
     }
 
+    public boolean tableSideStepMove(byte cell, byte d, byte n) {
+        if (state[cell] == 0) return false;
+        byte targetCell = TransitionMatrix[cell][d];
+        if (targetCell == -1) return false;
+        if (n == 1) {
+            if (state[targetCell] == 0) return true;
+            return canInline(cell, targetCell, d);
+        } else {
+            if (state[targetCell] != 0) return false;
+            if (n == 2) {
+                byte ally = ally1[cell][d];
+                if (ally != -1 && state[ally] == state[cell] && TransitionMatrix[ally][d] != -1 && state[TransitionMatrix[ally][d]] == 0)
+                    return true;
+                ally = ally3[cell][d];
+                return ally != -1 && state[ally] == state[cell] && TransitionMatrix[ally][d] != -1 && state[TransitionMatrix[ally][d]] == 0;
+            } else {
+                byte ally = ally1[cell][d];
+                byte ally_2 = ally2[cell][d];
+                if (ally != -1 && state[ally] == state[cell] && TransitionMatrix[ally][d] != -1 && state[TransitionMatrix[ally][d]] == 0 &&
+                        ally_2 != -1 && state[ally_2] == state[cell] && TransitionMatrix[ally_2][d] != -1 && state[TransitionMatrix[ally_2][d]] == 0)
+                    return true;
+                ally = ally3[cell][d];
+                ally_2 = ally4[cell][d];
+                return (ally != -1 && state[ally] == state[cell] && TransitionMatrix[ally][d] != -1 && state[TransitionMatrix[ally][d]] == 0 &&
+                        ally_2 != -1 && state[ally_2] == state[cell] && TransitionMatrix[ally_2][d] != -1 && state[TransitionMatrix[ally_2][d]] == 0);
+            }
+        }
+    }
+
+
     int countPossibleMoves() {
         int c = 0;
         for (byte cell = 0; cell < state.length; cell++) {
@@ -293,25 +415,25 @@ public class BitBoard1D {
         return res;
     }
 
-
     BitBoard1D getBestMove() {
         int max = -7;
         int depth = 6;
         BitBoard1D best = null;
         for (BitBoard1D move : getAllPossibleMoves((byte) 1)) {
             int utility = min(move, -7, 7, depth - 1);
-            if (max == -7 || utility > max) {
+            if (best == null || utility > max) {
                 max = utility;
                 best = move;
             }
         }
+        System.out.println(max);
         return best;
     }
 
     int min(BitBoard1D b, int alpha, int beta, int depth) {
-        if (depth == 0) return b.white - b.black;
+        if (depth == 0 || b.white == 6 || b.black == 6) return b.white - b.black;
         int value = 7;
-        for (BitBoard1D move : getAllPossibleMoves((byte) 10)) {
+        for (BitBoard1D move : b.getAllPossibleMoves((byte) 10)) {
             int utility = max(move, alpha, beta, depth - 1);
             if (utility < value) value = utility;
             if (utility <= alpha) return utility;
@@ -321,9 +443,9 @@ public class BitBoard1D {
     }
 
     int max(BitBoard1D b, int alpha, int beta, int depth) {
-        if (depth == 0) return b.white - b.black;
+        if (depth == 0 || b.white == 6 || b.black == 6) return b.white - b.black;
         int value = -7;
-        for (BitBoard1D move : getAllPossibleMoves((byte) 1)) {
+        for (BitBoard1D move : b.getAllPossibleMoves((byte) 1)) {
             int utility = min(move, alpha, beta, depth - 1);
             if (utility > value) value = utility;
             if (utility >= beta) return utility;
@@ -410,12 +532,11 @@ public class BitBoard1D {
                 }
             }
         }
-        System.out.println(white + " w/b " + black);
     }
-
 
     public class Listener implements EventHandler<MouseEvent> {
         byte id;
+
 
         public Listener(int id) {
             this.id = (byte) id;
@@ -423,6 +544,7 @@ public class BitBoard1D {
 
         @Override
         public void handle(MouseEvent event) {
+
             String[] choices = {"Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown"};
             String direction = (String) JOptionPane.showInputDialog(null, "Direction",
                     "Direction", JOptionPane.QUESTION_MESSAGE, null,
@@ -447,17 +569,274 @@ public class BitBoard1D {
                 byte moved = state[id];
                 move(id, d, n);
                 show();
+                System.out.println("Score: " + white + " W/B " + black);
                 if (moved == 10) {
                     BitBoard1D next = getBestMove();
                     state = next.state;
                     white = next.white;
                     black = next.black;
                     show();
+                    System.out.println("Score: " + white + " W/B " + black);
                 }
             } else {
                 System.out.println("Invalid, Cell: " + id + " direction: " + direction + " N: " + N);
             }
         }
-
     }
+
+    public static final byte[][] ally1 = new byte[][]{
+            {-1, -1, 1, 6, 5, -1,},
+            {-1, -1, 2, 7, 6, 0,},
+            {-1, -1, 3, 8, 7, 1,},
+            {-1, -1, 4, 9, 8, 2,},
+            {-1, -1, -1, 10, 9, 3,},
+            {-1, 0, 6, 12, 11, -1,},
+            {0, 1, 7, 13, 12, 5,},
+            {1, 2, 8, 14, 13, 6,},
+            {2, 3, 9, 15, 14, 7,},
+            {3, 4, 10, 16, 15, 8,},
+            {4, -1, -1, 17, 16, 9,},
+            {-1, 5, 12, 19, 18, -1,},
+            {5, 6, 13, 20, 19, 11,},
+            {6, 7, 14, 21, 20, 12,},
+            {7, 8, 15, 22, 21, 13,},
+            {8, 9, 16, 23, 22, 14,},
+            {9, 10, 17, 24, 23, 15,},
+            {10, -1, -1, 25, 24, 16,},
+            {-1, 11, 19, 27, 26, -1,},
+            {11, 12, 20, 28, 27, 18,},
+            {12, 13, 21, 29, 28, 19,},
+            {13, 14, 22, 30, 29, 20,},
+            {14, 15, 23, 31, 30, 21,},
+            {15, 16, 24, 32, 31, 22,},
+            {16, 17, 25, 33, 32, 23,},
+            {17, -1, -1, 34, 33, 24,},
+            {-1, 18, 27, 35, -1, -1,},
+            {18, 19, 28, 36, 35, 26,},
+            {19, 20, 29, 37, 36, 27,},
+            {20, 21, 30, 38, 37, 28,},
+            {21, 22, 31, 39, 38, 29,},
+            {22, 23, 32, 40, 39, 30,},
+            {23, 24, 33, 41, 40, 31,},
+            {24, 25, 34, 42, 41, 32,},
+            {25, -1, -1, -1, 42, 33,},
+            {26, 27, 36, 43, -1, -1,},
+            {27, 28, 37, 44, 43, 35,},
+            {28, 29, 38, 45, 44, 36,},
+            {29, 30, 39, 46, 45, 37,},
+            {30, 31, 40, 47, 46, 38,},
+            {31, 32, 41, 48, 47, 39,},
+            {32, 33, 42, 49, 48, 40,},
+            {33, 34, -1, -1, 49, 41,},
+            {35, 36, 44, 50, -1, -1,},
+            {36, 37, 45, 51, 50, 43,},
+            {37, 38, 46, 52, 51, 44,},
+            {38, 39, 47, 53, 52, 45,},
+            {39, 40, 48, 54, 53, 46,},
+            {40, 41, 49, 55, 54, 47,},
+            {41, 42, -1, -1, 55, 48,},
+            {43, 44, 51, 56, -1, -1,},
+            {44, 45, 52, 57, 56, 50,},
+            {45, 46, 53, 58, 57, 51,},
+            {46, 47, 54, 59, 58, 52,},
+            {47, 48, 55, 60, 59, 53,},
+            {48, 49, -1, -1, 60, 54,},
+            {50, 51, 57, -1, -1, -1,},
+            {51, 52, 58, -1, -1, 56,},
+            {52, 53, 59, -1, -1, 57,},
+            {53, 54, 60, -1, -1, 58,},
+            {54, 55, -1, -1, -1, 59,},
+    };
+
+    public static final byte[][] ally2 = new byte[][]{
+            {-1, -1, 2, 13, 11, -1,},
+            {-1, -1, 3, 14, 12, -1,},
+            {-1, -1, 4, 15, 13, 0,},
+            {-1, -1, -1, 16, 14, 1,},
+            {-1, -1, -1, 17, 15, 2,},
+            {-1, -1, 7, 20, 18, -1,},
+            {-1, -1, 8, 21, 19, -1,},
+            {-1, -1, 9, 22, 20, 5,},
+            {-1, -1, 10, 23, 21, 6,},
+            {-1, -1, -1, 24, 22, 7,},
+            {-1, -1, -1, 25, 23, 8,},
+            {-1, 0, 13, 28, 26, -1,},
+            {-1, 1, 14, 29, 27, -1,},
+            {0, 2, 15, 30, 28, 11,},
+            {1, 3, 16, 31, 29, 12,},
+            {2, 4, 17, 32, 30, 13,},
+            {3, -1, -1, 33, 31, 14,},
+            {4, -1, -1, 34, 32, 15,},
+            {-1, 5, 20, 36, -1, -1,},
+            {-1, 6, 21, 37, 35, -1,},
+            {5, 7, 22, 38, 36, 18,},
+            {6, 8, 23, 39, 37, 19,},
+            {7, 9, 24, 40, 38, 20,},
+            {8, 10, 25, 41, 39, 21,},
+            {9, -1, -1, 42, 40, 22,},
+            {10, -1, -1, -1, 41, 23,},
+            {-1, 11, 28, 43, -1, -1,},
+            {-1, 12, 29, 44, -1, -1,},
+            {11, 13, 30, 45, 43, 26,},
+            {12, 14, 31, 46, 44, 27,},
+            {13, 15, 32, 47, 45, 28,},
+            {14, 16, 33, 48, 46, 29,},
+            {15, 17, 34, 49, 47, 30,},
+            {16, -1, -1, -1, 48, 31,},
+            {17, -1, -1, -1, 49, 32,},
+            {-1, 19, 37, 50, -1, -1,},
+            {18, 20, 38, 51, -1, -1,},
+            {19, 21, 39, 52, 50, 35,},
+            {20, 22, 40, 53, 51, 36,},
+            {21, 23, 41, 54, 52, 37,},
+            {22, 24, 42, 55, 53, 38,},
+            {23, 25, -1, -1, 54, 39,},
+            {24, -1, -1, -1, 55, 40,},
+            {26, 28, 45, 56, -1, -1,},
+            {27, 29, 46, 57, -1, -1,},
+            {28, 30, 47, 58, 56, 43,},
+            {29, 31, 48, 59, 57, 44,},
+            {30, 32, 49, 60, 58, 45,},
+            {31, 33, -1, -1, 59, 46,},
+            {32, 34, -1, -1, 60, 47,},
+            {35, 37, 52, -1, -1, -1,},
+            {36, 38, 53, -1, -1, -1,},
+            {37, 39, 54, -1, -1, 50,},
+            {38, 40, 55, -1, -1, 51,},
+            {39, 41, -1, -1, -1, 52,},
+            {40, 42, -1, -1, -1, 53,},
+            {43, 45, 58, -1, -1, -1,},
+            {44, 46, 59, -1, -1, -1,},
+            {45, 47, 60, -1, -1, 56,},
+            {46, 48, -1, -1, -1, 57,},
+            {47, 49, -1, -1, -1, 58,},
+    };
+
+    public static final byte[][] ally3 = new byte[][]{
+            {-1, 1, 6, 5, -1, -1,},
+            {-1, 2, 7, 6, 0, -1,},
+            {-1, 3, 8, 7, 1, -1,},
+            {-1, 4, 9, 8, 2, -1,},
+            {-1, -1, 10, 9, 3, -1,},
+            {0, 6, 12, 11, -1, -1,},
+            {1, 7, 13, 12, 5, 0,},
+            {2, 8, 14, 13, 6, 1,},
+            {3, 9, 15, 14, 7, 2,},
+            {4, 10, 16, 15, 8, 3,},
+            {-1, -1, 17, 16, 9, 4,},
+            {5, 12, 19, 18, -1, -1,},
+            {6, 13, 20, 19, 11, 5,},
+            {7, 14, 21, 20, 12, 6,},
+            {8, 15, 22, 21, 13, 7,},
+            {9, 16, 23, 22, 14, 8,},
+            {10, 17, 24, 23, 15, 9,},
+            {-1, -1, 25, 24, 16, 10,},
+            {11, 19, 27, 26, -1, -1,},
+            {12, 20, 28, 27, 18, 11,},
+            {13, 21, 29, 28, 19, 12,},
+            {14, 22, 30, 29, 20, 13,},
+            {15, 23, 31, 30, 21, 14,},
+            {16, 24, 32, 31, 22, 15,},
+            {17, 25, 33, 32, 23, 16,},
+            {-1, -1, 34, 33, 24, 17,},
+            {18, 27, 35, -1, -1, -1,},
+            {19, 28, 36, 35, 26, 18,},
+            {20, 29, 37, 36, 27, 19,},
+            {21, 30, 38, 37, 28, 20,},
+            {22, 31, 39, 38, 29, 21,},
+            {23, 32, 40, 39, 30, 22,},
+            {24, 33, 41, 40, 31, 23,},
+            {25, 34, 42, 41, 32, 24,},
+            {-1, -1, -1, 42, 33, 25,},
+            {27, 36, 43, -1, -1, 26,},
+            {28, 37, 44, 43, 35, 27,},
+            {29, 38, 45, 44, 36, 28,},
+            {30, 39, 46, 45, 37, 29,},
+            {31, 40, 47, 46, 38, 30,},
+            {32, 41, 48, 47, 39, 31,},
+            {33, 42, 49, 48, 40, 32,},
+            {34, -1, -1, 49, 41, 33,},
+            {36, 44, 50, -1, -1, 35,},
+            {37, 45, 51, 50, 43, 36,},
+            {38, 46, 52, 51, 44, 37,},
+            {39, 47, 53, 52, 45, 38,},
+            {40, 48, 54, 53, 46, 39,},
+            {41, 49, 55, 54, 47, 40,},
+            {42, -1, -1, 55, 48, 41,},
+            {44, 51, 56, -1, -1, 43,},
+            {45, 52, 57, 56, 50, 44,},
+            {46, 53, 58, 57, 51, 45,},
+            {47, 54, 59, 58, 52, 46,},
+            {48, 55, 60, 59, 53, 47,},
+            {49, -1, -1, 60, 54, 48,},
+            {51, 57, -1, -1, -1, 50,},
+            {52, 58, -1, -1, 56, 51,},
+            {53, 59, -1, -1, 57, 52,},
+            {54, 60, -1, -1, 58, 53,},
+            {55, -1, -1, -1, 59, 54,},
+    };
+
+    public static final byte[][] ally4 = new byte[][]{
+            {-1, 2, 13, 11, -1, -1,},
+            {-1, 3, 14, 12, -1, -1,},
+            {-1, 4, 15, 13, 0, -1,},
+            {-1, -1, 16, 14, 1, -1,},
+            {-1, -1, 17, 15, 2, -1,},
+            {-1, 7, 20, 18, -1, -1,},
+            {-1, 8, 21, 19, -1, -1,},
+            {-1, 9, 22, 20, 5, -1,},
+            {-1, 10, 23, 21, 6, -1,},
+            {-1, -1, 24, 22, 7, -1,},
+            {-1, -1, 25, 23, 8, -1,},
+            {0, 13, 28, 26, -1, -1,},
+            {1, 14, 29, 27, -1, -1,},
+            {2, 15, 30, 28, 11, 0,},
+            {3, 16, 31, 29, 12, 1,},
+            {4, 17, 32, 30, 13, 2,},
+            {-1, -1, 33, 31, 14, 3,},
+            {-1, -1, 34, 32, 15, 4,},
+            {5, 20, 36, -1, -1, -1,},
+            {6, 21, 37, 35, -1, -1,},
+            {7, 22, 38, 36, 18, 5,},
+            {8, 23, 39, 37, 19, 6,},
+            {9, 24, 40, 38, 20, 7,},
+            {10, 25, 41, 39, 21, 8,},
+            {-1, -1, 42, 40, 22, 9,},
+            {-1, -1, -1, 41, 23, 10,},
+            {11, 28, 43, -1, -1, -1,},
+            {12, 29, 44, -1, -1, -1,},
+            {13, 30, 45, 43, 26, 11,},
+            {14, 31, 46, 44, 27, 12,},
+            {15, 32, 47, 45, 28, 13,},
+            {16, 33, 48, 46, 29, 14,},
+            {17, 34, 49, 47, 30, 15,},
+            {-1, -1, -1, 48, 31, 16,},
+            {-1, -1, -1, 49, 32, 17,},
+            {19, 37, 50, -1, -1, -1,},
+            {20, 38, 51, -1, -1, 18,},
+            {21, 39, 52, 50, 35, 19,},
+            {22, 40, 53, 51, 36, 20,},
+            {23, 41, 54, 52, 37, 21,},
+            {24, 42, 55, 53, 38, 22,},
+            {25, -1, -1, 54, 39, 23,},
+            {-1, -1, -1, 55, 40, 24,},
+            {28, 45, 56, -1, -1, 26,},
+            {29, 46, 57, -1, -1, 27,},
+            {30, 47, 58, 56, 43, 28,},
+            {31, 48, 59, 57, 44, 29,},
+            {32, 49, 60, 58, 45, 30,},
+            {33, -1, -1, 59, 46, 31,},
+            {34, -1, -1, 60, 47, 32,},
+            {37, 52, -1, -1, -1, 35,},
+            {38, 53, -1, -1, -1, 36,},
+            {39, 54, -1, -1, 50, 37,},
+            {40, 55, -1, -1, 51, 38,},
+            {41, -1, -1, -1, 52, 39,},
+            {42, -1, -1, -1, 53, 40,},
+            {45, 58, -1, -1, -1, 43,},
+            {46, 59, -1, -1, -1, 44,},
+            {47, 60, -1, -1, 56, 45,},
+            {48, -1, -1, -1, 57, 46,},
+            {49, -1, -1, -1, 58, 47,},
+    };
 }
