@@ -1,6 +1,42 @@
 package sylvartore;
 
+import java.util.*;
+
 public class Main {
+
+    public static void test() {
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Info:\nPlease place input files under the same directory.");
+        System.out.println("Please enter a range, the program will read input files from " +
+                "\"Test1.input\" to \"TestN.input\". (N is input range)");
+        while (!scan.hasNextInt()) {
+            System.out.println("Invalid input, input must be an integer greater than 1");
+            scan.next();
+        }
+        int range = scan.nextInt();
+        while (range < 1) {
+            System.out.println("Invalid input, input must be an integer greater than 1");
+            while (!scan.hasNextInt()) {
+                System.out.println("Invalid input, input must be an integer greater than 1");
+                scan.next();
+            }
+            range = scan.nextInt();
+        }
+        for (int i = 1; i <= range; i++) {
+            BitBoard1D b = new BitBoard1D();
+            b.test(i);
+        }
+        System.out.println("FINISHED!");
+    }
+
+    public static void main(String[] args) {
+        test();
+        //  debug();
+        //run();
+        //  benchMarking();
+        //  run2();
+    }
+
 
     public static void debug() {
         int c = 0;
@@ -34,25 +70,6 @@ public class Main {
         long end = System.nanoTime();
         System.out.println((double) (end - start) / 1000000 + "ms");
         System.out.println(c);
-    }
-
-    public static void main(String[] args) {
-        for (int i = 0; i < 61; i++) {
-            System.out.println(i + " " +
-                    (i == BitBoard1D.standardNotationToCell(BitBoard1D.toStandardNotation[i])));
-            if (i != BitBoard1D.standardNotationToCell(BitBoard1D.toStandardNotation[i])) {
-                System.out.println(BitBoard1D.standardNotationToCell(BitBoard1D.toStandardNotation[i]));
-            }
-        }
-
-        //  debug();
-        // run();
-        //  benchMarking();
-        //run2();
-//        System.out.println(BitBoard1D.ally1[21][2]);
-//        System.out.println(BitBoard1D.ally2[21][2]);
-//        System.out.println(BitBoard1D.ally3[21][2]);
-//        System.out.println(BitBoard1D.ally4[21][2]);
     }
 
     static void printer() {

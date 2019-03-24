@@ -7,8 +7,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.util.*;
 
 public class UI extends Application {
@@ -22,10 +21,13 @@ public class UI extends Application {
 
     private void readLayout(BitBoard1D board) {
         try {
-            BufferedReader br = new BufferedReader(new FileReader("src/test_input/Test2.input"));
+            FileReader fr = new FileReader("src/test_input/Test3.input");
+            BufferedReader br = new BufferedReader(fr);
+          //  BufferedReader br = new BufferedReader(new StringReader(BitBoard1D.randomStateGenerator()));
             String line;
             int side = 10;
             for (int i = 1; (line = br.readLine()) != null; i++) {
+                System.out.println(line);
                 if (i == 1) {
                     if (line.toLowerCase().charAt(0) == 'w') side = 1;
                 } else {
@@ -35,32 +37,32 @@ public class UI extends Application {
                     }
                 }
             }
-            Set<String> ans = new TreeSet<>();
-            List<BitBoard1D> moves = board.getAllPossibleMoves((byte) side);
-            for (BitBoard1D move : moves) {
-                List<String> note = new ArrayList<>();
-                for (byte i = 0; i < move.state.length; i++) {
-                    if (move.state[i] != 0) {
-                        String sideStr = move.state[i] == 1 ? "w" : "b";
-                        note.add(BitBoard1D.toStandardNotation[i] + sideStr);
-                    }
-                }
-                note.sort((a, b) -> {
-                    if (a.charAt(2) == 'b' && b.charAt(2) == 'w') return -1;
-                    if (a.charAt(2) == 'w' && b.charAt(2) == 'b') return 1;
-                    return a.compareTo(b);
-                });
-                String encode = note.toString();
-                ans.add(encode.substring(1, encode.length() - 1));
-            }
-            br = new BufferedReader(new FileReader("src/test_key/Test2.board"));
-            int count = 0;
-            while ((line = br.readLine()) != null) {
-                if (ans.contains(line)) System.out.println("Failed: " + line);
-                count++;
-            }
-            if (ans.size() == count) System.out.println("Passed!");
-            else System.out.println("Failed: redundant answers");
+//            Set<String> ans = new TreeSet<>();
+//            List<BitBoard1D> moves = board.getAllPossibleMoves((byte) side);
+//            for (BitBoard1D move : moves) {
+//                ans.add(move.stateToString());
+//            }
+//            FileWriter fw = new FileWriter("src/test_res/Test3.board");
+//            BufferedWriter bw = new BufferedWriter(fw);
+//            for (String s : ans) {
+//                bw.write(s + "\n");
+//            }
+//            bw.close();
+//
+//            br = new BufferedReader(new FileReader("src/test_input/Test2.board"));
+//            int count = 0;
+//            while ((line = br.readLine()) != null) {
+//                if (ans.contains(line)) System.out.println("Failed: " + line);
+//                count++;
+//            }
+//            if (ans.size() == count) System.out.println("Passed!");
+//            else System.out.println("Failed: redundant answers");
+
+
+//            fr.close();
+//            br.close();
+//            fw.close();
+//            bw.close();
         } catch (Exception e) {
             e.printStackTrace();
         }

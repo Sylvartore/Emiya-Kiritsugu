@@ -6,8 +6,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 
 import javax.swing.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
 public class BitBoard1D {
 
@@ -483,13 +483,13 @@ public class BitBoard1D {
                 char a = ' ';
                 switch (aState) {
                     case 10:
-                        a = 'O';
+                        a = '@';
                         break;
                     case 0:
                         a = '+';
                         break;
                     case 1:
-                        a = '@';
+                        a = 'O';
                         break;
                 }
                 sb.append(a).append(' ');
@@ -517,6 +517,48 @@ public class BitBoard1D {
         }
     }
 
+    public String stateToString() {
+        List<String> note = new ArrayList<>();
+        for (byte i = 0; i < state.length; i++) {
+            if (state[i] != 0) {
+                String sideStr = state[i] == 1 ? "w" : "b";
+                note.add(toStandardNotation[i] + sideStr);
+            }
+        }
+        note.sort((a, b) -> {
+            if (a.charAt(2) == 'b' && b.charAt(2) == 'w') return -1;
+            if (a.charAt(2) == 'w' && b.charAt(2) == 'b') return 1;
+            return a.compareTo(b);
+        });
+        return String.join(",", note);
+    }
+
+    public static String randomStateGenerator() {
+        Random rand = new Random();
+        StringBuilder sb = new StringBuilder();
+        int randomSide = rand.nextInt(2);
+        if (randomSide == 0) sb.append('w');
+        else sb.append('b');
+        sb.append('\n');
+        int black = rand.nextInt(8) + 7;
+        int write = rand.nextInt(8) + 7;
+        BitBoard1D b = new BitBoard1D();
+        for (int i = 0; i < b.state.length && black > 0 && write > 0; i++) {
+            randomSide = rand.nextInt(4);
+            if (randomSide > 1) {
+                if (randomSide == 3) {
+                    b.state[i] = (byte) 1;
+                    write--;
+                } else {
+                    b.state[i] = (byte) 10;
+                    black--;
+                }
+            }
+        }
+        sb.append(b.stateToString());
+        return String.valueOf(sb);
+    }
+
     public void show() {
         for (UI.Square[] row : squares) {
             for (UI.Square square : row) {
@@ -533,6 +575,60 @@ public class BitBoard1D {
             }
         }
     }
+
+    public void test(int n) {
+        FileReader fr = null;
+        BufferedReader br = null;
+        FileWriter fw = null;
+        BufferedWriter bw = null;
+        final String path = ".";//"src/test_input";
+        try {
+            fr = new FileReader(path + "/Test" + n + ".input");
+            br = new BufferedReader(fr);
+            String line;
+            int side = 10;
+            for (int i = 1; (line = br.readLine()) != null; i++) {
+                if (i == 1) {
+                    if (line.toLowerCase().charAt(0) == 'w') side = 1;
+                } else {
+                    String[] states = line.split(",");
+                    for (String state : states) {
+                        readState(state);
+                    }
+                }
+            }
+            Set<String> ans = new TreeSet<>();
+            List<BitBoard1D> moves = getAllPossibleMoves((byte) side);
+            for (BitBoard1D move : moves) {
+                ans.add(move.stateToString());
+            }
+            fw = new FileWriter(path + "/Test" + n + ".board");
+            bw = new BufferedWriter(fw);
+            for (String s : ans) {
+                bw.write(s + "\n");
+            }
+//            br = new BufferedReader(new FileReader("src/test_input/Test" + n + ".board"));
+//            int count = 0;
+//            while ((line = br.readLine()) != null) {
+//                if (ans.contains(line)) System.out.println("Test " + n + " Failed: " + line);
+//                count++;
+//            }
+//            if (ans.size() == count) System.out.println("Test " + n + " Passed!");
+//            else System.out.println("Test " + n + " Failed: redundant answers");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            try {
+                if (br != null) br.close();
+                if (fr != null) fr.close();
+                if (bw != null) bw.close();
+                if (fw != null) fw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     public class Listener implements EventHandler<MouseEvent> {
         byte id;
