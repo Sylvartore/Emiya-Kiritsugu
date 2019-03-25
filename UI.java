@@ -21,7 +21,7 @@ public class UI extends Application {
 
     private void readLayout(BitBoard1D board) {
         try {
-            FileReader fr = new FileReader("src/test_input/Test3.input");
+            FileReader fr = new FileReader("src/test_input/Test7.input");
             BufferedReader br = new BufferedReader(fr);
           //  BufferedReader br = new BufferedReader(new StringReader(BitBoard1D.randomStateGenerator()));
             String line;
@@ -33,7 +33,7 @@ public class UI extends Application {
                 } else {
                     String[] states = line.split(",");
                     for (String state : states) {
-                        board.readState(state);
+                        board.readState(state.trim());
                     }
                 }
             }
@@ -74,7 +74,8 @@ public class UI extends Application {
         root = new GridPane();
         squares = new Square[20][20];
         BitBoard1D b = new BitBoard1D();
-        readLayout(b);
+//        readLayout(b);
+        b.state = b.getBelgianDaisyLayout();
         for (int i = 0; i < squares.length; i++) {
             for (int j = 0; j < squares.length; j++) {
                 squares[i][j] = new Square(-1, i, j);

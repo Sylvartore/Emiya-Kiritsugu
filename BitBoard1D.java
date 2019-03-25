@@ -167,43 +167,62 @@ public class BitBoard1D {
         System.arraycopy(source.state, 0, state, 0, source.state.length);
     }
 
-    public void tryMove(final byte cell, final byte d, final byte n) {
-        if (state[cell] == 0) return;
+    public static boolean tryMove(final byte cell, final byte d, final byte n, byte[] state) {
+        if (state[cell] == 0) return false;
         byte targetCell = TransitionMatrix[cell][d];
-        if (targetCell == -1) return;
+        if (targetCell == -1) return false;
         if (n == 1) {
             if (state[targetCell] == 0) {
                 state[targetCell] = state[cell];
                 state[cell] = 0;
-                return;
+                return true;
+            } else {
+                byte force = 0;
+                while (++force <= 3 && targetCell != -1 && state[targetCell] == state[cell]) {
+                    targetCell = TransitionMatrix[targetCell][d];
+                }
+                if (force > 3 || targetCell == -1) return false;
+                byte counterForce = 0;
+                byte counter = state[targetCell];
+                byte last = targetCell;
+                if (counter != 0) {
+                    while (targetCell != -1 && state[targetCell] == counter && ++counterForce <= 3) {
+                        targetCell = TransitionMatrix[targetCell][d];
+                        if (targetCell != -1) last = targetCell;
+                    }
+                    if (targetCell != -1) {
+                        if (state[targetCell] == counter) {
+                            targetCell = TransitionMatrix[targetCell][d];
+                            if (targetCell != -1) last = targetCell;
+                        }
+                    }
+                }
+                if (force > counterForce && (targetCell == -1 || state[targetCell] != state[cell])) {
+                    targetCell = last;
+                    byte next = TransitionMatrix[targetCell][CounterDirection[d]];
+                    byte to = targetCell;
+                    while ((targetCell == to || state[targetCell] != 0)
+                            && (targetCell != cell)) {
+//                        if (TransitionMatrix[targetCell][d] == -1) {
+//                            if (state[targetCell] == 1) black++;
+//                            if (state[targetCell] == 10) white++;
+//                        }
+                        state[targetCell] = state[next];
+                        targetCell = next;
+                        next = TransitionMatrix[targetCell][CounterDirection[d]];
+                    }
+                    state[cell] = 0;
+                    return true;
+                }
+                return false;
             }
-            //         } else {
-//                byte prev = targetCell;
-//                while (prev != -1 && TransitionMatrix[prev][d] != -1 && state[prev] != 0) {
-//                    prev = TransitionMatrix[prev][d];
-//                }
-//                if (state[prev] != 0 && TransitionMatrix[prev][d] != -1) prev = TransitionMatrix[prev][d];
-//                byte next = TransitionMatrix[prev][CounterDirection[d]];
-//                byte to = prev;
-//                while ((prev == to || state[prev] != 0)
-//                        && (prev != cell)) {
-//                    if (TransitionMatrix[prev][d] == -1) {
-//                        if (state[prev] == 1) black++;
-//                        if (state[prev] == 10) white++;
-//                    }
-//                    state[prev] = state[next];
-//                    prev = next;
-//                    next = TransitionMatrix[prev][CounterDirection[d]];
-//                }
-//                state[cell] = 0;
-//            }
-//        } else {
-//            if (state[targetCell] != 0) return false;
-//            byte ssd = d;
-//            if (++ssd == 6) ssd = 0;
-//            if (canSideStep(cell, d, n, ssd)) return true;
-//            if (++ssd == 6) ssd = 0;
-//            return canSideStep(cell, d, n, ssd);
+        } else {
+            if (state[targetCell] != 0) return false;
+            byte ssd = d;
+            if (++ssd == 6) ssd = 0;
+            if (ssss(cell, d, n, ssd, state)) return true;
+            if (++ssd == 6) ssd = 0;
+            return ssss(cell, d, n, ssd, state);
         }
     }
 
@@ -224,10 +243,6 @@ public class BitBoard1D {
     }
 
     public boolean isValidMove(byte cell, byte d, byte n) {
-        return isValidMove(cell, d, n, state);
-    }
-
-    public boolean isValidMove(byte cell, byte d, byte n, byte[] state) {
         if (state[cell] == 0) return false;
         byte targetCell = TransitionMatrix[cell][d];
         if (targetCell == -1) return false;
@@ -244,13 +259,26 @@ public class BitBoard1D {
         }
     }
 
+    public static boolean ssss(byte cell, byte d, byte n, byte ssd, byte[] state) {
+        byte ally1Cell = TransitionMatrix[cell][ssd];
+        if (ally1Cell == -1 || state[cell] != state[ally1Cell])
+            return false;
+        byte ally1SsdCell = TransitionMatrix[ally1Cell][d];
+        if (ally1SsdCell == -1 || state[ally1SsdCell] != 0) return false;
+        if (n == 2) return true;
+        byte ally2Cell = TransitionMatrix[ally1Cell][ssd];
+        if (ally2Cell == -1 || state[cell] != state[ally2Cell])
+            return false;
+        byte ally2SsdCell = TransitionMatrix[ally2Cell][d];
+        return ally2SsdCell != -1 && state[ally2SsdCell] == 0;
+    }
+
     public byte printTable(byte cell, byte d) {
         byte ssd = d;
         if (++ssd == 6) ssd = 0;
         if (++ssd == 6) ssd = 0;
         return TransitionMatrix[cell][ssd];
     }
-
 
     public boolean canInline(byte cell, byte targetCell, byte d) {
         byte force = 0;
@@ -292,10 +320,6 @@ public class BitBoard1D {
     }
 
     public void move(byte cell, byte d, byte n) {
-        move(cell, d, n, state);
-    }
-
-    public void move(byte cell, byte d, byte n, byte[] state) {
         byte targetCell = TransitionMatrix[cell][d];
         if (n == 1) {
             if (state[targetCell] == 0) {
@@ -415,24 +439,40 @@ public class BitBoard1D {
         return res;
     }
 
+    List<byte[]> getAllPossibleMove_in_one(byte side) {
+        List<byte[]> res = new ArrayList<>();
+        for (byte cell = 0; cell < state.length; cell++) {
+            if (state[cell] != side) continue;
+            for (byte dir = 0; dir < 6; dir++) {
+                for (byte n = 1; n <= 3; n++) {
+                    byte[] copy = new byte[state.length];
+                    System.arraycopy(state, 0, copy, 0, state.length);
+                    if (BitBoard1D.tryMove(cell, dir, n, copy)) {
+                        res.add(copy);
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
     BitBoard1D getBestMove() {
-        int max = -7;
-        int depth = 6;
+        int max = Integer.MIN_VALUE;
+        int depth = 5;
         BitBoard1D best = null;
         for (BitBoard1D move : getAllPossibleMoves((byte) 1)) {
-            int utility = min(move, -7, 7, depth - 1);
+            int utility = min(move, Integer.MIN_VALUE, Integer.MAX_VALUE, depth - 1);
             if (best == null || utility > max) {
                 max = utility;
                 best = move;
             }
         }
-        System.out.println(max);
         return best;
     }
 
     int min(BitBoard1D b, int alpha, int beta, int depth) {
         if (depth == 0 || b.white == 6 || b.black == 6) return b.white - b.black;
-        int value = 7;
+        int value = Integer.MAX_VALUE;
         for (BitBoard1D move : b.getAllPossibleMoves((byte) 10)) {
             int utility = max(move, alpha, beta, depth - 1);
             if (utility < value) value = utility;
@@ -444,7 +484,7 @@ public class BitBoard1D {
 
     int max(BitBoard1D b, int alpha, int beta, int depth) {
         if (depth == 0 || b.white == 6 || b.black == 6) return b.white - b.black;
-        int value = -7;
+        int value = Integer.MIN_VALUE;
         for (BitBoard1D move : b.getAllPossibleMoves((byte) 1)) {
             int utility = min(move, alpha, beta, depth - 1);
             if (utility > value) value = utility;
@@ -576,6 +616,28 @@ public class BitBoard1D {
         }
     }
 
+    public void readLayout(int n) {
+        try {
+            FileReader fr = new FileReader("src/test_input/Test" + n + ".input");
+            BufferedReader br = new BufferedReader(fr);
+            String line;
+            int side = 10;
+            for (int i = 1; (line = br.readLine()) != null; i++) {
+                if (i == 1) {
+                    if (line.toLowerCase().charAt(0) == 'w') side = 1;
+                } else {
+                    String[] states = line.split(",");
+                    for (String state : states) {
+                        readState(state.trim());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     public void test(int n) {
         FileReader fr = null;
         BufferedReader br = null;
@@ -593,7 +655,7 @@ public class BitBoard1D {
                 } else {
                     String[] states = line.split(",");
                     for (String state : states) {
-                        readState(state);
+                        readState(state.trim());
                     }
                 }
             }
@@ -667,7 +729,10 @@ public class BitBoard1D {
                 show();
                 System.out.println("Score: " + white + " W/B " + black);
                 if (moved == 10) {
+                    long start = System.currentTimeMillis();
                     BitBoard1D next = getBestMove();
+                    long end = System.currentTimeMillis();
+                    System.out.println("Used: " + (double) (end - start) / 1000);
                     state = next.state;
                     white = next.white;
                     black = next.black;
@@ -678,6 +743,7 @@ public class BitBoard1D {
                 System.out.println("Invalid, Cell: " + id + " direction: " + direction + " N: " + N);
             }
         }
+
     }
 
     public static final byte[][] ally1 = new byte[][]{

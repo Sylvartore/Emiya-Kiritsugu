@@ -30,47 +30,114 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        test();
+        //test();
         //  debug();
+        benchMarking2();
         //run();
         //  benchMarking();
         //  run2();
+//        b1.state = b1.getBelgianDaisyLayout();
+//        b1.print();
+//        b1.tryMove((byte) 8, (byte) 0, (byte) 1);
+//        b1.print();
     }
 
-
-    public static void debug() {
-        int c = 0;
-//        BitBoard b = new BitBoard();
-//        Board bb = new Board();
-        long start = System.nanoTime();
-//        for (byte row = 0; row < 9; row++) {
-//            for (byte col = 0; col < Board.rowToCol[row]; col++) {
-//                for (byte dir = 0; dir < 6; dir++) {
-//                    for (byte allyN = 1; allyN <= 3; allyN++) {
-//                        if (b.isValidMove(row, col, dir, allyN)
-//                                != bb.isValidMove(row - 1, col - 1, Board.Direction.values()[dir], allyN)) {
-//                            System.out.println(BitBoard.DimensionReduction[row][col]);
-//                            System.out.println(row + " r/c " + col + " di: " + dir + " n:" + allyN);
-//                            c++;
-//                        }
+//    public static void debug() {
+//        b1.state = b1.getBelgianDaisyLayout();
+//        for (byte cell = 0; cell < b.state.length; cell++) {
+//            for (byte dir = 0; dir < 6; dir++) {
+//                for (byte n = 1; n <= 3; n++) {
+//                    if (b1.state[cell] != (byte) 1) continue;
+//                    BitBoard1D copy = new BitBoard1D(b1);
+//                    boolean a = copy.tryMove(cell, dir, n);
+//                    if (b1.isValidMove(cell, dir, n) != a) {
+//                        System.out.println(a);
+//                        System.out.println(cell + " / " + dir + " / " + n);
 //                    }
 //                }
 //            }
 //        }
-        for (byte cell = 0; cell < 61; cell++) {
-            for (byte dir = 0; dir < 6; dir++) {
-                for (byte n = 1; n <= 3; n++) {
-                    if (b1.isValidMove(cell, dir, n) != b1.tableSideStepMove(cell, dir, n)) {
-                        System.out.println(cell + " : " + " dir: " + dir + " n:" + n);
-                        c++;
+//    }
+
+    public static void benchMarking2() {
+        //b1.readLayout();
+        for (int i = 1; i < 8; i++) {
+            System.out.println("\ntest " + i);
+            b1.readLayout(i);
+            benchMarker_1();
+            benchMarker_in_one();
+
+        }
+
+
+    }
+
+
+    public static void benchMarker_in_one() {
+        long p1 = 0;
+        long to = 0;
+        long ac = System.nanoTime();
+        List<byte[]> ans = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            for (byte cell = 0; cell < b1.state.length; cell++) {
+                for (byte dir = 0; dir < 6; dir++) {
+                    for (byte n = 1; n <= 3; n++) {
+                        long start = System.nanoTime();
+                        byte[] copy = new byte[b1.state.length];
+                        System.arraycopy(b1.state, 0, copy, 0, b1.state.length);
+                        p1 += System.nanoTime() - start;
+                        if (BitBoard1D.tryMove(cell, dir, n, copy)) {
+                            ans.add(copy);
+                        }
+                        to += System.nanoTime() - start;
                     }
                 }
             }
         }
-        long end = System.nanoTime();
-        System.out.println((double) (end - start) / 1000000 + "ms");
-        System.out.println(c);
+        long ace = System.nanoTime();
+        System.out.println("new new： " + (double) p1 / 1000000 + "ms");
+        System.out.println("new total： " + (double) to / 1000000 + "ms");
+        System.out.println("new AC： " + (double) (ace - ac) / 1000000 + "ms");
+        System.out.println(ans.size());
     }
+
+    public static void benchMarker_1() {
+        long p1 = 0;
+        long to = 0;
+        long ac = System.nanoTime();
+        List<BitBoard1D> ans = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            for (byte cell = 0; cell < b1.state.length; cell++) {
+                for (byte dir = 0; dir < 6; dir++) {
+                    for (byte n = 1; n <= 3; n++) {
+                        long start = System.nanoTime();
+                        boolean a = b1.isValidMove(cell, dir, n);
+                        p1 += System.nanoTime() - start;
+                        if (a) {
+                            BitBoard1D copy = new BitBoard1D(b1);
+                            copy.move(cell, dir, n);
+                            ans.add(copy);
+                        }
+                        to += System.nanoTime() - start;
+                    }
+                }
+            }
+        }
+        long ace = System.nanoTime();
+        System.out.println("old isValid： " + (double) p1 / 1000000 + "ms");
+        System.out.println("old total：" + (double) to / 1000000 + "ms");
+        System.out.println("old AC： " + (double) (ace - ac) / 1000000 + "ms");
+        System.out.println(ans.size());
+    }
+
+//    public static void debug() {
+////        b1.state = b1.getStandardInitialLayout();
+////        long start = System.nanoTime();
+////        List<BitBoard1D> ans = b1.getAllPossibleMove_in_one((byte)1);
+////        long end = System.nanoTime();
+////        System.out.println((double) (end - start) / 1000000 + "ms");
+////        System.out.println(ans.size());
+//    }
 
     static void printer() {
         for (byte i = 0; i < b1.state.length; i++) {
