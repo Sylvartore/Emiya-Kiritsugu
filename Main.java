@@ -80,7 +80,7 @@ public class Main {
                 for (byte dir = 0; dir < 6; dir++) {
                     for (byte n = 1; n <= 3; n++) {
                         long start = System.nanoTime();
-                        boolean a = b1.isValidMove(cell, dir, n);
+                        boolean a = b1.isValidMove(cell, dir, n)!=-1;
                         p1 += System.nanoTime() - start;
                         if (a) {
                             BitBoard1D copy = new BitBoard1D(b1);
@@ -151,7 +151,7 @@ public class Main {
         if (b.isValidMove(BitBoard.DimensionIncrement[cell][0], BitBoard.DimensionIncrement[cell][1], d, (byte) 1)) {
             b.move(BitBoard.DimensionIncrement[cell][0], BitBoard.DimensionIncrement[cell][1], d, (byte) n);
         }
-        if (b1.isValidMove(c, d, (byte) n)) b1.move(c, d, (byte) n);
+        if (b1.isValidMove(c, d, (byte) n)!=-1) b1.move(c, d, (byte) n);
         //  System.out.println(b.countPossibleMoves() + " / " + b1.countPossibleMoves());
         b1.print();
         //  b1.printP();
@@ -197,7 +197,7 @@ public class Main {
     }
 
     public static void benchMarking() {
-        benchMarker4();
+
         benchMarker3();
 //        benchMarker2();
 //        benchMarker1();
@@ -256,7 +256,7 @@ public class Main {
             for (byte cell = 0; cell < b.state.length; cell++) {
                 for (byte dir = 0; dir < 6; dir++) {
                     for (byte allyN = 1; allyN <= 3; allyN++) {
-                        if (b.isValidMove(cell, dir, allyN))
+                        if (b.isValidMove(cell, dir, allyN)!=-1)
                             if (i == 0) c++;
                     }
                 }
@@ -267,22 +267,4 @@ public class Main {
         System.out.println(c);
     }
 
-    public static void benchMarker4() {
-        int c = 0;
-        BitBoard1D b = new BitBoard1D();
-        long start = System.nanoTime();
-        for (int i = 0; i < 10000; i++) {
-            for (byte cell = 0; cell < b.state.length; cell++) {
-                for (byte dir = 0; dir < 6; dir++) {
-                    for (byte allyN = 1; allyN <= 3; allyN++) {
-                        if (b.tableSideStepMove(cell, dir, allyN))
-                            if (i == 0) c++;
-                    }
-                }
-            }
-        }
-        long end = System.nanoTime();
-        System.out.println((double) (end - start) / 1000000L + "ms");
-        System.out.println(c);
-    }
 }
