@@ -30,9 +30,9 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        //test();
+        test();
         //  debug();
-        benchMarking2();
+       // benchMarking2();
         //run();
         //  benchMarking();
         //  run2();
@@ -65,42 +65,11 @@ public class Main {
             System.out.println("\ntest " + i);
             b1.readLayout(i);
             benchMarker_1();
-            benchMarker_in_one();
 
         }
 
 
     }
-
-
-    public static void benchMarker_in_one() {
-        long p1 = 0;
-        long to = 0;
-        long ac = System.nanoTime();
-        List<byte[]> ans = new ArrayList<>();
-        for (int i = 0; i < 1000; i++) {
-            for (byte cell = 0; cell < b1.state.length; cell++) {
-                for (byte dir = 0; dir < 6; dir++) {
-                    for (byte n = 1; n <= 3; n++) {
-                        long start = System.nanoTime();
-                        byte[] copy = new byte[b1.state.length];
-                        System.arraycopy(b1.state, 0, copy, 0, b1.state.length);
-                        p1 += System.nanoTime() - start;
-                        if (BitBoard1D.tryMove(cell, dir, n, copy)) {
-                            ans.add(copy);
-                        }
-                        to += System.nanoTime() - start;
-                    }
-                }
-            }
-        }
-        long ace = System.nanoTime();
-        System.out.println("new new： " + (double) p1 / 1000000 + "ms");
-        System.out.println("new total： " + (double) to / 1000000 + "ms");
-        System.out.println("new AC： " + (double) (ace - ac) / 1000000 + "ms");
-        System.out.println(ans.size());
-    }
-
     public static void benchMarker_1() {
         long p1 = 0;
         long to = 0;

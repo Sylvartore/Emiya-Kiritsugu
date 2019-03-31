@@ -8,7 +8,6 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
 import java.io.*;
-import java.util.*;
 
 public class UI extends Application {
 
@@ -75,7 +74,7 @@ public class UI extends Application {
         squares = new Square[20][20];
         BitBoard1D b = new BitBoard1D();
 //        readLayout(b);
-        b.state = b.getBelgianDaisyLayout();
+        b.state = b.getStandardInitialLayout();
         for (int i = 0; i < squares.length; i++) {
             for (int j = 0; j < squares.length; j++) {
                 squares[i][j] = new Square(-1, i, j);
