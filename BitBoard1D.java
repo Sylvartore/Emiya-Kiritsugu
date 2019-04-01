@@ -4,6 +4,7 @@ import javafx.event.EventHandler;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.text.Text;
 
 import javax.swing.*;
 import java.io.*;
@@ -151,21 +152,56 @@ public class BitBoard1D {
     public static final String[] directionToString = new String[]{"Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown"};
 
     byte state[];
-    byte stateP[];
-    private byte black;
-    private byte white;
+    //    private byte black;
+//    private byte white;
     UI.Square[][] squares;
+    Text bs;
+    Text ws;
+    byte humanSide;
+    byte aiSide;
+    double total;
+    long aiTime;
+    int turnLeft;
+    BitBoard1D prev;
 
     public BitBoard1D() {
-        state = new byte[61];//getStandardInitialLayout();
-        stateP = new byte[61];
+        state = new byte[61];
+        humanSide = (byte) 10;
+        aiSide = (byte) 1;
+        total = 0;
+        turnLeft = 80;
+        aiTime = 3000;
+        prev = null;
     }
 
     public BitBoard1D(BitBoard1D source) {
-        white = source.white;
-        black = source.black;
+//        white = source.white;
+//        black = source.black;
+        prev = source.prev;
+        humanSide = source.humanSide;
+        aiSide = source.aiSide;
+        total = source.total;
+        aiTime = source.aiTime;
+        turnLeft = source.turnLeft;
         state = new byte[61];
         System.arraycopy(source.state, 0, state, 0, source.state.length);
+    }
+
+    public void undo() {
+        if (prev != null) {
+            System.out.println("Undo");
+            humanSide = prev.humanSide;
+            aiSide = prev.aiSide;
+            total = prev.total;
+            aiTime = prev.aiTime;
+            turnLeft = prev.turnLeft;
+            state = new byte[61];
+            System.arraycopy(prev.state, 0, state, 0, prev.state.length);
+            prev = null;
+            show();
+        } else {
+            System.out.println("Can't undo");
+        }
     }
 
     public static final byte[] table = new byte[]{55, 49, 42, 34, 25, 16, 8, 1, -5};
@@ -276,10 +312,10 @@ public class BitBoard1D {
         byte to = prev;
         while ((prev == to || state[prev] != 0)
                 && (prev != cell)) {
-            if (TransitionMatrix[prev][d] == -1) {
-                if (state[prev] == 1) black++;
-                if (state[prev] == 10) white++;
-            }
+//            if (TransitionMatrix[prev][d] == -1) {
+//                if (state[prev] == 1) black++;
+//                if (state[prev] == 10) white++;
+//            }
             state[prev] = state[next];
             prev = next;
             next = TransitionMatrix[prev][CounterDirection[d]];
@@ -313,13 +349,13 @@ public class BitBoard1D {
             byte p = 0;
             for (byte dir = 0; dir < 6; dir++) {
                 for (byte allyN = 1; allyN <= 3; allyN++) {
-                    if (isValidMove(cell, dir, allyN)!=-1) {
+                    if (isValidMove(cell, dir, allyN) != -1) {
                         c++;
                         p++;
                     }
                 }
             }
-            stateP[cell] = p;
+            //stateP[cell] = p;
         }
         return c;
     }
@@ -349,34 +385,13 @@ public class BitBoard1D {
                 for (byte n = 1; n <= 3; n++) {
                     int order = isValidMove(cell, dir, n);
                     if (order != -1) {
-                        res.add(new byte[]{cell, dir, n, (byte)order});
+                        res.add(new byte[]{cell, dir, n, (byte) order});
                     }
                 }
             }
         }
         res.sort(Comparator.comparingInt(move -> move[3]));
         return res;
-    }
-
-    static int c = 0;
-
-    BitBoard1D getBestMove() {
-        int max = Integer.MIN_VALUE;
-        int depth = 4;
-        c = 0;
-        BitBoard1D best = null;
-        for (byte[] move : getAllPossibleMoves((byte) 1)) {
-            BitBoard1D copy = new BitBoard1D(this);
-            copy.move(move[0], move[1], move[2]);
-            int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth - 1);
-            if (best == null || utility > max) {
-                max = utility;
-                best = copy;
-            }
-        }
-        System.out.println("node: " + c);
-        System.out.println("best: " + max);
-        return best;
     }
 
     static byte[] central_weight = {
@@ -392,28 +407,92 @@ public class BitBoard1D {
     };
 
     int heuristic() {
-        int score = 0;
+        c++;
+        int a = 0;
+        int e = 0;
+        int heuristic_value = 0;
         for (int i = 0; i < state.length; i++) {
             if (state[i] == 0) continue;
-            if (state[i] == 1) {
-                score += central_weight[i];
+            if (state[i] == aiSide) {
+                a += 1;
+                heuristic_value += central_weight[i] + adjacency_check(i);
             } else {
-                score -= central_weight[i];
+                e += 1;
+                heuristic_value -= central_weight[i] + adjacency_check(i);
             }
         }
-        return score + (white - black) * 50;
+        if (e == 8) return Integer.MAX_VALUE;
+        if (a == 8) return Integer.MIN_VALUE;
+        return (a - e) * 50 + heuristic_value;
     }
 
-    int min(BitBoard1D b, int alpha, int beta, int depth) {
-        if (depth == 0 || b.white == 6 || b.black == 6) {
-            c++;
-            return b.heuristic();
+    int adjacency_check(int cell) {
+        int score = 0;
+        for (int i = 3; i < 6; i++) {
+            byte adjacent_cell = TransitionMatrix[cell][i];
+            if (adjacent_cell != -1 && state[adjacent_cell] == state[cell]) {
+                score += 1;
+            }
+        }
+        return score;
+    }
+
+    static int c = 0;
+
+    BitBoard1D getBestMove() {
+        int max = Integer.MIN_VALUE;
+        int depth = 1;
+        int turn = turnLeft;
+        c = 0;
+        BitBoard1D best = null;
+        byte[] bestMove = null;
+        long limit = System.currentTimeMillis() + aiTime;
+        long left = aiTime;
+        long last;
+        do {
+            long start = System.currentTimeMillis();
+            for (byte[] move : getAllPossibleMoves(aiSide)) {
+                if (System.currentTimeMillis() >= limit - 300) break;
+                BitBoard1D copy = new BitBoard1D(this);
+                copy.move(move[0], move[1], move[2]);
+                int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth - 1, turn - 1);
+                if (best == null || utility > max) {
+                    max = utility;
+                    best = copy;
+                    bestMove = move;
+                }
+            }
+            last = System.currentTimeMillis() - start;
+            left -= last;
+            depth++;
+            if (depth == turnLeft + 1) break;
+        } while (left > last);
+        byte[] uiMove = toUiMove(bestMove[0], bestMove[1], bestMove[2], state);
+        StringBuilder sb = new StringBuilder();
+        sb.append(toStandardNotation[uiMove[0]]);
+        sb.append(" ");
+        if (uiMove.length == 2) {
+            sb.append(directionToString[uiMove[1]]);
+        } else {
+            sb.append(toStandardNotation[uiMove[1]]);
+            sb.append(" ");
+            sb.append(directionToString[uiMove[2]]);
+        }
+        System.out.println("AI moved: " + sb.toString());
+        System.out.println("max depth: " + depth + ",  node searched: " + c + ",  best node found: " + max);
+        return best;
+    }
+
+    int min(BitBoard1D b, int alpha, int beta, int depth, int turn) {
+        if (depth == 0) {
+            if (turn == 0) return b.heuristic();
+            return b.quiesce_min(alpha, beta, turn);
         }
         int value = Integer.MAX_VALUE;
-        for (byte[] move : b.getAllPossibleMoves((byte) 10)) {
+        for (byte[] move : b.getAllPossibleMoves(humanSide)) {
             BitBoard1D copy = new BitBoard1D(b);
             copy.move(move[0], move[1], move[2]);
-            int utility = max(copy, alpha, beta, depth - 1);
+            int utility = max(copy, alpha, beta, depth - 1, turn - 1);
             if (utility < value) value = utility;
             if (utility <= alpha) return utility;
             if (utility < beta) beta = utility;
@@ -421,16 +500,33 @@ public class BitBoard1D {
         return value;
     }
 
-    int max(BitBoard1D b, int alpha, int beta, int depth) {
-        if (depth == 0 || b.white == 6 || b.black == 6) {
-            c++;
-            return b.heuristic();
+    int quiesce_min(int alpha, int beta, int turn) {
+        int score = heuristic();
+        if (turn == 0) return score;
+        if (score <= alpha) return score;
+        for (byte[] move : getAllCaptureMoves(humanSide)) {
+            BitBoard1D copy = new BitBoard1D(this);
+            copy.move(move[0], move[1], move[2]);
+            score = copy.quiesce_max(alpha, beta, turn - 1);
+            if (score <= beta) {
+                beta = score;
+                if (score <= alpha) break;
+            }
+        }
+        return score;
+    }
+
+
+    int max(BitBoard1D b, int alpha, int beta, int depth, int turn) {
+        if (depth == 0) {
+            if (turn == 0) return b.heuristic();
+            return b.quiesce_max(alpha, beta, turn);
         }
         int value = Integer.MIN_VALUE;
-        for (byte[] move : b.getAllPossibleMoves((byte) 1)) {
+        for (byte[] move : b.getAllPossibleMoves(aiSide)) {
             BitBoard1D copy = new BitBoard1D(b);
             copy.move(move[0], move[1], move[2]);
-            int utility = min(copy, alpha, beta, depth - 1);
+            int utility = min(copy, alpha, beta, depth - 1, turn - 1);
             if (utility > value) value = utility;
             if (utility >= beta) return utility;
             if (utility > alpha) alpha = utility;
@@ -438,20 +534,45 @@ public class BitBoard1D {
         return value;
     }
 
-    public void printP() {
-        print(true);
+    int quiesce_max(int alpha, int beta, int turn) {
+        int score = heuristic();
+        if (turn == 0) return score;
+        if (score >= beta) return score;
+        for (byte[] move : getAllCaptureMoves(aiSide)) {
+            BitBoard1D copy = new BitBoard1D(this);
+            copy.move(move[0], move[1], move[2]);
+            score = copy.quiesce_min(alpha, beta, turn - 1);
+            if (score >= alpha) {
+                alpha = score;
+                if (score >= beta) break;
+            }
+        }
+        return score;
     }
 
+    List<byte[]> getAllCaptureMoves(byte side) {
+        List<byte[]> res = new ArrayList<>();
+        for (byte cell = 0; cell < state.length; cell++) {
+            if (state[cell] != side) continue;
+            for (byte dir = 0; dir < 6; dir++) {
+                for (byte n = 1; n <= 3; n++) {
+                    int order = isValidMove(cell, dir, n);
+                    if (order == 0 || order == 1) {
+                        res.add(new byte[]{cell, dir, n, (byte) order});
+                    }
+                }
+            }
+        }
+        res.sort(Comparator.comparingInt(move -> move[3]));
+        return res;
+    }
+    
     public void print() {
-        print(false);
-    }
-
-    public void print(boolean isP) {
         StringBuilder sb = new StringBuilder();
         int spaces = 4, n = 0, m = 5;
         boolean decre = true;
         char x = 'I', y = '9';
-        for (byte aState : (isP ? stateP : state)) {
+        for (byte aState : state) {
             if (n == m) {
                 sb.append('\n');
                 n = 0;
@@ -463,23 +584,20 @@ public class BitBoard1D {
                 }
                 sb.append(x--).append(' ');
             }
-            if (!isP) {
-                char a = ' ';
-                switch (aState) {
-                    case 10:
-                        a = '@';
-                        break;
-                    case 0:
-                        a = '+';
-                        break;
-                    case 1:
-                        a = 'O';
-                        break;
-                }
-                sb.append(a).append(' ');
-            } else {
-                sb.append(aState).append(' ');
+
+            char a = ' ';
+            switch (aState) {
+                case 10:
+                    a = '@';
+                    break;
+                case 0:
+                    a = '+';
+                    break;
+                case 1:
+                    a = 'O';
+                    break;
             }
+            sb.append(a).append(' ');
             n++;
             if (n == m) {
                 if (n != 9 && !decre) sb.append(y--);
@@ -492,8 +610,10 @@ public class BitBoard1D {
         System.out.println(String.valueOf(sb));
     }
 
-    public void init(UI.Square[][] squares) {
+    public void init(UI.Square[][] squares, Text bs, Text ws) {
         this.squares = squares;
+        this.ws = ws;
+        this.bs = bs;
         for (int i = 0; i < state.length; i++) {
             int[] coordinates = ui[i];
             squares[coordinates[0]][coordinates[1]].id = i;
@@ -544,17 +664,25 @@ public class BitBoard1D {
     }
 
     public void show() {
+        int w = 0;
+        int b = 0;
         for (UI.Square[] row : squares) {
             for (UI.Square square : row) {
                 if (square.id != -1) {
                     ImageView a;
-                    if (state[square.id] == 1) a = new ImageView(new Image("white-ball.png"));
-                    else if (state[square.id] == 10) a = new ImageView(new Image("black-ball.png"));
-                    else a = new ImageView(new Image("empty.png"));
+                    if (state[square.id] == 1) {
+                        w++;
+                        a = new ImageView(new Image("white-ball.png"));
+                    } else if (state[square.id] == 10) {
+                        b++;
+                        a = new ImageView(new Image("black-ball.png"));
+                    } else a = new ImageView(new Image("empty.png"));
                     a.setFitWidth(80);
                     a.setFitHeight(80);
                     square.getChildren().clear();
                     square.getChildren().add(a);
+                    if (bs != null) bs.setText("Black Score: " + (14 - w) + "      ");
+                    if (ws != null) ws.setText("White Score: " + (14 - b) + "      ");
                 }
             }
         }
@@ -655,6 +783,18 @@ public class BitBoard1D {
         }
     }
 
+    public void aiMove() {
+        long start = System.currentTimeMillis();
+        BitBoard1D next = getBestMove();
+        long end = System.currentTimeMillis();
+        double used = (double) (end - start) / 1000;
+        total += used;
+        System.out.println("Used: " + used + "s Total: " + total + "s");
+        state = next.state;
+        show();
+        turnLeft--;
+    }
+
 
     public class Listener implements EventHandler<MouseEvent> {
         byte id;
@@ -666,15 +806,20 @@ public class BitBoard1D {
 
         @Override
         public void handle(MouseEvent event) {
-
-            String[] choices = {"Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown"};
+            if (turnLeft == 0) {
+                System.out.println("game over");
+                return;
+            }
+            if (state[id] != humanSide) return;
+            String[] choices = {"Cancel", "Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown"};
             String direction = (String) JOptionPane.showInputDialog(null, "Direction",
                     "Direction", JOptionPane.QUESTION_MESSAGE, null,
                     choices,
                     choices[0]);
+            if (direction == null || direction.equals("Cancel")) return;
             byte d = 0;
-            for (byte i = 0; i < choices.length; i++) {
-                if (choices[i].equals(direction)) d = i;
+            for (byte i = 1; i < choices.length; i++) {
+                if (choices[i].equals(direction)) d = (byte) (i - 1);
             }
             choices = new String[]{"1", "2", "3"};
 
@@ -682,29 +827,56 @@ public class BitBoard1D {
                     "N", JOptionPane.QUESTION_MESSAGE, null,
                     choices,
                     choices[0]);
-            byte n = 0;
-            for (byte i = 0; i < choices.length; i++) {
-                if (choices[i].equals(N)) n = i;
-            }
-            n++;
+            if (N == null) return;
+            byte n = Byte.parseByte(N);
             if (isValidMove(id, d, n) != -1) {
-                byte moved = state[id];
+                turnLeft--;
+                prev = new BitBoard1D(BitBoard1D.this);
                 move(id, d, n);
                 show();
-                if (moved == 10) {
-                    long start = System.currentTimeMillis();
-                    BitBoard1D next = getBestMove();
-                    long end = System.currentTimeMillis();
-                    System.out.println("Used: " + (double) (end - start) / 1000);
-                    state = next.state;
-                    white = next.white;
-                    black = next.black;
-                    show();
+                if (turnLeft == 0) {
+                    System.out.println("game over");
+                    return;
                 }
+                aiMove();
             } else {
-                System.out.println("Invalid, Cell: " + id + " direction: " + direction + " N: " + N);
+                System.out.println("Invalid Human Move: " + toStandardNotation[id] + "(" + id + ") direction: " + directionToString[d] + " N: " + N);
             }
         }
 
+    }
+
+    public static byte[] toUiMove(byte cell, byte d, byte n, byte[] state) {
+        if (n == 1) {
+            byte targetCell = TransitionMatrix[cell][d];
+            if (state[targetCell] == 0) {
+                return new byte[]{cell, d};
+            } else {
+                byte furtherCell = TransitionMatrix[targetCell][d];
+                if (furtherCell != -1 && state[furtherCell] == state[cell]) {
+                    return new byte[]{cell, furtherCell, d};
+                }
+                return new byte[]{cell, targetCell, d};
+            }
+        } else {
+            byte ssd = d;
+            if (++ssd == 6) ssd = 0;
+            byte allyCell = TransitionMatrix[cell][ssd];
+            byte allyTargetCell = TransitionMatrix[allyCell][d];
+            if (state[allyCell] == state[cell] && allyTargetCell != -1 && state[allyTargetCell] == 0) {
+                if (n == 2) return new byte[]{cell, allyCell, d};
+                else {
+                    byte ally2Cell = TransitionMatrix[allyCell][ssd];
+                    byte ally2TargetCell = TransitionMatrix[ally2Cell][d];
+                    if (state[ally2Cell] == state[cell] && ally2TargetCell != -1 && state[ally2TargetCell] == 0) {
+                        return new byte[]{cell, ally2Cell, d};
+                    }
+                }
+            }
+            if (++ssd == 6) ssd = 0;
+            allyCell = TransitionMatrix[cell][ssd];
+            if (n == 2) return new byte[]{cell, allyCell, d};
+            return new byte[]{cell, TransitionMatrix[allyCell][ssd], d};
+        }
     }
 }
