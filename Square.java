@@ -1,7 +1,6 @@
 package sylvartore;
 
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 class Square extends Pane {
@@ -17,8 +16,8 @@ class Square extends Pane {
         setWidth(60);
         setHeight(60);
         slot = new Circle();
-        slot.setFill(Color.YELLOW);
-        slot.setRadius(20);
+        slot.setVisible(false);
+        slot.setRadius(40);
         getChildren().add(slot);
     }
 }

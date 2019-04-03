@@ -1,47 +1,46 @@
 package sylvartore;
 
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
 
+import java.io.*;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
-public class Board {
+public class Game {
     byte state[];
-    Square[][] squares;
     int turnLeft;
-    Board prev;
+    Game prev;
     int aiTime;
     double total;
     double total2;
     AI ai;
     AI counter;
     byte humanSide;
-    Text bs;
-    Text ws;
     boolean gameOver;
-    private AI counter1;
+    UI ui;
+    ArrayList<String> log;
+    long aiFinished;
+    static Zobrist z = new Zobrist();
 
-    public Board() {
+    public Game() {
         state = new byte[61];
-        humanSide = (byte) -1;
+        humanSide = 0;
         total = 0;
         total2 = 0;
         turnLeft = 100;
         aiTime = 5000;
         prev = null;
-        //  ai = new KingOf5Sec((byte) -1, "Ko5");
-        //ai = new AI((byte) 1, "Main");
-        counter = new KingOf5Sec((byte) -1, "Ko5");
-        ai = new ThreadAI((byte) 1, "Thread");
+        log = new ArrayList<>();
+        //  ai = new Quiescent((byte) -1, "Ko5");
+        //ai = new AI((byte) 1, "UI");
+        //  counter = new Quiescent((byte) -1, "Ko5");
+        ai = new AI((byte) -1, "Main");
+        // ai =new ThreadAI((byte) 1, "Thread");
+        counter = new ThreadAI((byte) 1, "Thread");
         gameOver = false;
     }
 
     public void reset() {
-        humanSide = (byte) -1;
+        humanSide = 0;
         total = 0;
         total2 = 0;
         aiTime = 5000;
@@ -49,12 +48,12 @@ public class Board {
         prev = null;
         gameOver = false;
         update();
+        log.clear();
     }
 
-    public Board(Board source) {
+    public Game(Game source) {
         prev = source.prev;
         humanSide = source.humanSide;
-//        aiSide = source.aiSide;
         total = source.total;
         total2 = source.total2;
         aiTime = source.aiTime;
@@ -64,6 +63,7 @@ public class Board {
         gameOver = source.gameOver;
         ai = source.ai;
         counter = source.counter;
+        log = source.log;
     }
 
     public static int isValidMove(byte cell, byte d, byte n, byte[] state) {
@@ -212,14 +212,15 @@ public class Board {
         }
     }
 
-    void init(Square[][] squares) {
+    void init(UI ui) {
+        this.ui = ui;
         state = getStandardInitialLayout();
-        this.squares = squares;
         for (int i = 0; i < state.length; i++) {
             int[] coordinates = UI_GRID[i];
-            squares[coordinates[0]][coordinates[1]].id = i;
-            squares[coordinates[0]][coordinates[1]].setOnMouseClicked(
+            ui.squares[coordinates[0] + 1][coordinates[1] + 1].id = i;
+            ui.squares[coordinates[0] + 1][coordinates[1] + 1].setOnMouseClicked(
                     new HumanClickListener(i, this));
+            ui.squares[coordinates[0] + 1][coordinates[1] + 1].slot.setVisible(true);
         }
     }
 
@@ -228,11 +229,14 @@ public class Board {
             System.out.println("Undo");
             humanSide = prev.humanSide;
             total = prev.total;
+            total2 = prev.total2;
             aiTime = prev.aiTime;
             turnLeft = prev.turnLeft;
             state = new byte[61];
             System.arraycopy(prev.state, 0, state, 0, prev.state.length);
             prev = prev.prev;
+            log.remove(log.size() - 1);
+            log.remove(log.size() - 1);
             update();
         } else {
             System.out.println("Can't undo");
@@ -242,26 +246,19 @@ public class Board {
 
     public void update() {
         int w = 0, b = 0;
-        for (Square[] row : squares) {
+        for (Square[] row : ui.squares) {
             for (Square square : row) {
                 if (square.id != -1) {
-                    ImageView image;
                     if (state[square.id] == 1) {
                         w++;
                         square.slot.setFill(Color.GREY);
-                       // image = new ImageView(new Image("white-ball.png"));
                     } else if (state[square.id] == -1) {
                         b++;
-                        square.slot.setFill(Color.BLACK);
-                        //image = new ImageView(new Image("black-ball.png"));
-                    } else //image = new ImageView(new Image("empty.png"));
-                        square.slot.setFill(Color.BLUE);
-                    //image.setFitWidth(80);
-                   // image.setFitHeight(80);
-                   // square.getChildren().clear();
-                  //  square.getChildren().add(image);
-                    if (bs != null) bs.setText("Black Score: " + (14 - w) + "      ");
-                    if (ws != null) ws.setText("White Score: " + (14 - b) + "      ");
+                        square.slot.setFill(Color.rgb(43, 43, 43));
+                    } else
+                        square.slot.setFill(Color.rgb(112, 146, 190));
+                    if (ui.bs != null) ui.bs.setText("Black Score: " + (14 - w) + "      ");
+                    if (ui.ws != null) ui.ws.setText("White Score: " + (14 - b) + "      ");
                 }
             }
         }
@@ -274,17 +271,69 @@ public class Board {
     public void aiMove(AI ai) {
         if (gameOver) return;
         long start = System.currentTimeMillis();
-        byte[] next = ai.getBestMove(turnLeft, aiTime, state);
+        byte[] best = ai.getBestMove(turnLeft, aiTime, state);
         long end = System.currentTimeMillis();
         double used = (double) (end - start) / 1000;
         if (ai == this.ai) total += used;
-        if (ai == this.counter) total2 += used;
+        if (humanSide == 0 && ai == this.counter) total2 += used;
         String s = (ai == this.ai) ? String.valueOf(total) : String.valueOf(total2);
+        String t = String.valueOf(used);
         turnLeft--;
         System.out.println("Turn Left: " + turnLeft
-                + " Used: " + used + "s Total: " +
+                + " Used: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s Total: " +
                 (s.length() > 6 ? s.substring(0, 6) : s) + "s\n");
-        state = next;
+        log.add("Turn Left: " + turnLeft
+                + "\t" + (humanSide == -1 ? "WHITE" : "BLACK")
+                + ": " + Game.moveToString(best, state)
+                + "\tTime: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s"
+                + "\tTotal Time: " + (s.length() > 6 ? s.substring(0, 6) : s) + "s");
+
+        move(best[0], best[1], best[2], state);
+    }
+
+    static String moveToString(byte[] move, byte[] state) {
+        byte[] uiMove = toUiMove(move[0], move[1], move[2], state);
+        StringBuilder sb = new StringBuilder();
+        sb.append(Game.ToStandardNotation[uiMove[0]]);
+        sb.append(" ");
+        if (uiMove.length == 2) {
+            sb.append(Game.directionToString[uiMove[1]]);
+        } else {
+            sb.append(Game.ToStandardNotation[uiMove[1]]);
+            sb.append(" ");
+            sb.append(Game.directionToString[uiMove[2]]);
+        }
+        return sb.toString();
+    }
+
+    void outputLog(boolean toConsole) {
+        if (toConsole) {
+            for (String s : log) {
+                System.out.println(s);
+            }
+            System.out.println();
+        } else {
+            FileWriter fw = null;
+            BufferedWriter bw = null;
+            try {
+                fw = new FileWriter("./log.txt");
+                bw = new BufferedWriter(fw);
+                for (String s : log) {
+                    bw.write(s + "\n");
+                }
+                bw.close();
+                fw.close();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            } finally {
+                try {
+                    if (bw != null) bw.close();
+                    if (fw != null) fw.close();
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+        }
     }
 
     public static final byte[] CounterDirection = new byte[]{3, 4, 5, 0, 1, 2};
