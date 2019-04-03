@@ -53,14 +53,14 @@ public class AI {
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
-        int max = Integer.MIN_VALUE, depth = 1, actual = 0, actual_node = 0;
+        int max = Integer.MIN_VALUE, depth = 2, actual = 0, actual_node = 0;
         nodeCount = 0;
         byte[] best = null, bestMove = null;
         long limit = System.currentTimeMillis() + aiTime, left = aiTime, last = 0;
         out:
         do {
-            if (depth > turnLeft && depth != 1) break;
-            actual++;
+            if (depth > turnLeft && depth != 2) break;
+            actual = depth;
             long start = System.currentTimeMillis();
             byte[] best_cur = null, bestMove_cur = null;
             int max_cur = Integer.MIN_VALUE;
@@ -87,7 +87,7 @@ public class AI {
             max = max_cur;
             best = best_cur;
             bestMove = bestMove_cur;
-        } while ((left / 9) > last);
+        } while ((left / 10) > last);
         byte[] uiMove = Board.toUiMove(bestMove[0], bestMove[1], bestMove[2], state);
         log(uiMove, actual, max, actual_node);
         return best;
@@ -137,11 +137,13 @@ public class AI {
                 heuristic_value += central_weight[i] + adjacency_check(i, state) / 3;
             } else {
                 e += 1;
-                heuristic_value -= central_weight[i] + adjacency_check(i, state) / 3;//2
+                heuristic_value -= central_weight[i] + adjacency_check(i, state) / 3;
             }
         }
         if (a == 8) return Integer.MIN_VALUE;
-        if (e == 8 ||(e == 9 && a > 9)) return Integer.MAX_VALUE;
+        if (e == 8) return Integer.MAX_VALUE;
+        if (e == 9) heuristic_value += 500;
+        if (a == 9) heuristic_value -= 500;
         return (a - e) * 50 + heuristic_value;
     }
 
@@ -167,7 +169,7 @@ public class AI {
             sb.append(" ");
             sb.append(Board.directionToString[uiMove[2]]);
         }
-        System.out.println(name + " AI moved: " + sb.toString());
+        System.out.println(name + " AI moved: " + sb.toString() + " " + (side == 1 ? "w" : "b"));
         System.out.println("    max depth: " + depth + ",    " +
                 "node searched: " + actual_nodes + ",    best node found: " + max);
     }
@@ -177,7 +179,7 @@ public class AI {
             1, 2, 2, 2, 2, 1,
             1, 2, 3, 3, 3, 2, 1,
             1, 2, 3, 4, 4, 3, 2, 1,
-            1, 2, 3, 4, 5, 4, 3, 2, 1,
+            1, 2, 3, 5, 6, 5, 3, 2, 1,
             1, 2, 3, 4, 4, 3, 2, 1,
             1, 2, 3, 3, 3, 2, 1,
             1, 2, 2, 2, 2, 1,

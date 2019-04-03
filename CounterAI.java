@@ -56,7 +56,7 @@ public class CounterAI extends AI {
             byte[] copy = new byte[state.length];
             System.arraycopy(state, 0, copy, 0, state.length);
             Board.move(move[0], move[1], move[2], copy);
-            score = quiesce_max(alpha, beta, turn - 1, copy);
+            score = max_to_end(copy, alpha, beta, 2, turn - 1);
             if (score <= beta) {
                 beta = score;
                 if (score <= alpha) break;
@@ -91,7 +91,7 @@ public class CounterAI extends AI {
             byte[] copy = new byte[state.length];
             System.arraycopy(state, 0, copy, 0, state.length);
             Board.move(move[0], move[1], move[2], copy);
-            score = quiesce_min(alpha, beta, turn - 1, copy);
+            score = min_to_end(copy, alpha, beta, 2, turn - 1);
             if (score >= alpha) {
                 alpha = score;
                 if (score >= beta) break;
@@ -118,6 +118,41 @@ public class CounterAI extends AI {
         return value;
     }
 
+    int min_to_end(byte[] state, int alpha, int beta, int depth, int turn) {
+        if (depth == 0 || turn == 0) {
+            return heuristic(state);
+        }
+        int value = Integer.MAX_VALUE;
+        for (byte[] move : getAllPossibleMoves(counterSide, state)) {
+            byte[] copy = new byte[state.length];
+            System.arraycopy(state, 0, copy, 0, state.length);
+            Board.move(move[0], move[1], move[2], copy);
+            int utility = max_to_end(copy, alpha, beta, depth - 1, turn - 1);
+            if (utility < value) value = utility;
+            if (utility <= alpha) return utility;
+            if (utility < beta) beta = utility;
+        }
+        return value;
+    }
+
+    int max_to_end(byte[] state, int alpha, int beta, int depth, int turn) {
+        if (depth == 0 || turn == 0) {
+            return heuristic(state);
+        }
+        int value = Integer.MIN_VALUE;
+        for (byte[] move : getAllPossibleMoves(side, state)) {
+            byte[] copy = new byte[state.length];
+            System.arraycopy(state, 0, copy, 0, state.length);
+            Board.move(move[0], move[1], move[2], copy);
+            int utility = min_to_end(copy, alpha, beta, depth - 1, turn - 1);
+            if (utility > value) value = utility;
+            if (utility >= beta) return utility;
+            if (utility > alpha) alpha = utility;
+        }
+        return value;
+    }
+
+
     int heuristic(byte[] state) {
         nodeCount++;
         int a = 0, e = 0, heuristic_value = 0;
@@ -132,7 +167,9 @@ public class CounterAI extends AI {
             }
         }
         if (a == 8) return Integer.MIN_VALUE;
-        if (e == 8 || (e == 9 && a > 9)) return Integer.MAX_VALUE;
+        if (e == 8) return Integer.MAX_VALUE;
+        if (e == 9) heuristic_value += 500;
+        if (a == 9) heuristic_value -= 500;
         return (a - e) * 50 + heuristic_value;
     }
 

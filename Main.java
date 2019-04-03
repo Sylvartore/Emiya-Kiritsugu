@@ -27,7 +27,7 @@ public class Main extends Application {
         primaryStage.setTitle("Abalone");
         root = new VBox();
         board = new GridPane();
-        squares = new Square[20][20];
+        squares = new Square[17][18];
         for (int i = 0; i < squares.length; i++) {
             for (int j = 0; j < squares.length; j++) {
                 squares[i][j] = new Square(-1, i, j);
@@ -54,11 +54,12 @@ public class Main extends Application {
         add_aiGo(btnRow);
         add_undo(btnRow);
         add_ava(btnRow);
+        //   add_ko5(btnRow);
         root.getChildren().add(btnRow);
-
         HBox textRow = new HBox();
         add_time_limit(textRow);
         add_turn_limit(textRow);
+        add_pause(textRow);
         root.getChildren().add(textRow);
         add_scores();
     }
@@ -69,9 +70,19 @@ public class Main extends Application {
         AivAi.setPrefWidth(120);
         AivAi.setOnMouseClicked(event -> {
             mainAiMove();
-            // counterAiMove();
+            //counterAiMove();
         });
         btnRow.getChildren().add(AivAi);
+    }
+
+    void add_ko5(HBox btnRow) {
+        Button ko5 = new Button();
+        ko5.setText("Ko5 up");
+        ko5.setPrefWidth(120);
+        ko5.setOnMouseClicked(event -> {
+            game_board.ai = new KingOf5Sec(game_board.ai.side, "Ko5");
+        });
+        btnRow.getChildren().add(ko5);
     }
 
     void mainAiMove() {
@@ -174,12 +185,21 @@ public class Main extends Application {
         aiGofirst.setText("AI go first");
         aiGofirst.setPrefWidth(120);
         aiGofirst.setOnMouseClicked(event -> {
-            game_board.aiSide = (byte) 1;
-            game_board.humanSide = (byte) -1;
+            game_board.ai.side = (byte) -1;
+            game_board.humanSide = (byte) 1;
             game_board.aiMove(game_board.ai);
             game_board.update();
         });
         btnRow.getChildren().add(aiGofirst);
+    }
+
+    void add_pause(HBox textRow) {
+        Button reset = new Button();
+        reset.setText("pause");
+        reset.setPrefWidth(120);
+        reset.setOnMouseClicked(event -> {
+        });
+        textRow.getChildren().add(reset);
     }
 
     void add_standard(HBox btnRow) {

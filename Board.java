@@ -2,6 +2,7 @@ package sylvartore;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 
 import java.util.ArrayList;
@@ -15,32 +16,47 @@ public class Board {
     Board prev;
     int aiTime;
     double total;
+    double total2;
     AI ai;
     AI counter;
     byte humanSide;
-    byte aiSide;
     Text bs;
     Text ws;
     boolean gameOver;
+    private AI counter1;
 
     public Board() {
         state = new byte[61];
         humanSide = (byte) -1;
-        aiSide = (byte) 1;
         total = 0;
+        total2 = 0;
         turnLeft = 100;
         aiTime = 5000;
         prev = null;
-        ai = new AI((byte) 1, "Main");
-        counter = new CounterAI((byte) -1, "Counter");
+        //  ai = new KingOf5Sec((byte) -1, "Ko5");
+        //ai = new AI((byte) 1, "Main");
+        counter = new KingOf5Sec((byte) -1, "Ko5");
+        ai = new ThreadAI((byte) 1, "Thread");
         gameOver = false;
+    }
+
+    public void reset() {
+        humanSide = (byte) -1;
+        total = 0;
+        total2 = 0;
+        aiTime = 5000;
+        turnLeft = 100;
+        prev = null;
+        gameOver = false;
+        update();
     }
 
     public Board(Board source) {
         prev = source.prev;
         humanSide = source.humanSide;
-        aiSide = source.aiSide;
+//        aiSide = source.aiSide;
         total = source.total;
+        total2 = source.total2;
         aiTime = source.aiTime;
         turnLeft = source.turnLeft;
         state = new byte[61];
@@ -211,26 +227,18 @@ public class Board {
         if (prev != null) {
             System.out.println("Undo");
             humanSide = prev.humanSide;
-            aiSide = prev.aiSide;
             total = prev.total;
             aiTime = prev.aiTime;
             turnLeft = prev.turnLeft;
             state = new byte[61];
             System.arraycopy(prev.state, 0, state, 0, prev.state.length);
-            prev = null;
+            prev = prev.prev;
             update();
         } else {
             System.out.println("Can't undo");
         }
     }
 
-    public void reset() {
-        total = 0;
-        aiTime = 5000;
-        turnLeft = 100;
-        prev = null;
-        update();
-    }
 
     public void update() {
         int w = 0, b = 0;
@@ -240,15 +248,18 @@ public class Board {
                     ImageView image;
                     if (state[square.id] == 1) {
                         w++;
-                        image = new ImageView(new Image("white-ball.png"));
+                        square.slot.setFill(Color.GREY);
+                       // image = new ImageView(new Image("white-ball.png"));
                     } else if (state[square.id] == -1) {
                         b++;
-                        image = new ImageView(new Image("black-ball.png"));
-                    } else image = new ImageView(new Image("empty.png"));
-                    image.setFitWidth(80);
-                    image.setFitHeight(80);
-                    square.getChildren().clear();
-                    square.getChildren().add(image);
+                        square.slot.setFill(Color.BLACK);
+                        //image = new ImageView(new Image("black-ball.png"));
+                    } else //image = new ImageView(new Image("empty.png"));
+                        square.slot.setFill(Color.BLUE);
+                    //image.setFitWidth(80);
+                   // image.setFitHeight(80);
+                   // square.getChildren().clear();
+                  //  square.getChildren().add(image);
                     if (bs != null) bs.setText("Black Score: " + (14 - w) + "      ");
                     if (ws != null) ws.setText("White Score: " + (14 - b) + "      ");
                 }
@@ -266,8 +277,9 @@ public class Board {
         byte[] next = ai.getBestMove(turnLeft, aiTime, state);
         long end = System.currentTimeMillis();
         double used = (double) (end - start) / 1000;
-        total += used;
-        String s = String.valueOf(total);
+        if (ai == this.ai) total += used;
+        if (ai == this.counter) total2 += used;
+        String s = (ai == this.ai) ? String.valueOf(total) : String.valueOf(total2);
         turnLeft--;
         System.out.println("Turn Left: " + turnLeft
                 + " Used: " + used + "s Total: " +
@@ -370,28 +382,28 @@ public class Board {
     public byte[] getGermanDaisyLayout() {
         return new byte[]{
                 0, 0, 0, 0, 0,
-                -1, -1, 0, 0, 1, 1,
-                -1, -1, -1, 0, 1, 1, 1,
-                0, -1, -1, 0, 0, 1, 1, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 1, 0, 0, -1, -1, 0,
-                1, 1, 1, 0, -1, -1, -1,
                 1, 1, 0, 0, -1, -1,
+                1, 1, 1, 0, -1, -1, -1,
+                0, 1, 1, 0, 0, -1, -1, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, -1, -1, 0, 0, 1, 1, 0,
+                -1, -1, -1, 0, 1, 1, 1,
+                -1, -1, 0, 0, 1, 1,
                 0, 0, 0, 0, 0
         };
     }
 
     public byte[] getBelgianDaisyLayout() {
         return new byte[]{
-                -1, -1, 0, 1, 1,
-                -1, -1, -1, 1, 1, 1,
-                0, -1, -1, 0, 1, 1, 0,
+                1, 1, 0, -1, -1,
+                1, 1, 1, -1, -1, -1,
+                0, 1, 1, 0, -1, -1, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 1, 1, 0, -1, -1, 0,
-                1, 1, 1, -1, -1, -1,
-                1, 1, 0, -1, -1
+                0, -1, -1, 0, 1, 1, 0,
+                -1, -1, -1, 1, 1, 1,
+                -1, -1, 0, 1, 1
         };
     }
 
