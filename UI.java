@@ -218,7 +218,7 @@ public class UI extends Application {
                 System.out.println("can't reset while ai running");
                 return;
             }
-            game.state = game.getStandardInitialLayout();
+            game.state = Game.getStandardInitialLayout();
             game.reset();
             pause = true;
             humanTurn = true;
@@ -300,7 +300,7 @@ public class UI extends Application {
             resetTime();
             pause = false;
             (new Thread(() -> {
-                game.aiMove(game.ai);
+                game.aiFirstMove();
                 Platform.runLater(() -> game.update());
                 humanTurn = true;
                 resetTime();
@@ -341,7 +341,7 @@ public class UI extends Application {
         standard.setPrefWidth(100);
         standard.setText("Standard");
         standard.setOnMouseClicked(event -> {
-            game.state = game.getStandardInitialLayout();
+            game.state = Game.getStandardInitialLayout();
             game.reset();
         });
         btnRow.getChildren().add(standard);
@@ -352,7 +352,7 @@ public class UI extends Application {
         bel.setText("BelgianDaisy");
         bel.setPrefWidth(100);
         bel.setOnMouseClicked(event -> {
-            game.state = game.getBelgianDaisyLayout();
+            game.state = Game.getBelgianDaisyLayout();
             game.reset();
         });
         btnRow.getChildren().add(bel);
@@ -363,7 +363,7 @@ public class UI extends Application {
         ger.setText("GermanDaisy");
         ger.setPrefWidth(100);
         ger.setOnMouseClicked(event -> {
-            game.state = game.getGermanDaisyLayout();
+            game.state = Game.getGermanDaisyLayout();
             game.reset();
         });
         btnRow.getChildren().add(ger);

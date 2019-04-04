@@ -12,14 +12,12 @@ public class Quiescent extends AI {
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
         int max = Integer.MIN_VALUE, depth = 2, actual = 1, actual_node = 0;
-        nodeCount = 0;
         this.state = state;
         byte[] bestMove = null;
         long limit = System.currentTimeMillis() + aiTime, left = aiTime, last;
         out:
         do {
-            if (depth > turnLeft && depth != 2) break;
-            actual = depth;
+            if (depth > turnLeft && depth != 2 || (depth == 7 && aiTime <= 5000)) break;
             long start = System.currentTimeMillis();
             bestMove_cur = null;
             max_cur = Integer.MIN_VALUE;
@@ -38,14 +36,14 @@ public class Quiescent extends AI {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            actual_node = nodeCount;
+            actual = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
             max = max_cur;
             bestMove = bestMove_cur;
         } while ((left / 7) > last);
-        log(bestMove, actual, max, actual_node, state);
+        log(bestMove, actual, max, state);
         return bestMove;
     }
 
@@ -143,7 +141,7 @@ public class Quiescent extends AI {
         return value;
     }
 
-    int adjacency_check(int cell, byte[] state) {
+    int group_check(int cell, byte[] state) {
         int score = 0;
         for (int i = 3; i < 6; i++) {
             byte adjacent_cell = Game.TransitionMatrix[cell][i];
@@ -155,16 +153,15 @@ public class Quiescent extends AI {
     }
 
     int heuristic(byte[] state) {
-        nodeCount++;
         int a = 0, e = 0, heuristic_value = 0;
         for (int i = 0; i < state.length; i++) {
             if (state[i] == 0) continue;
             if (state[i] == side) {
                 a += 1;
-                heuristic_value += central_weight[i]; //+ adjacency_check(i, state) / 3;
+                heuristic_value += central_weight[i]; //+ group_check(i, state) / 3;
             } else {
                 e += 1;
-                heuristic_value -= central_weight[i];//+ adjacency_check(i, state) / 3;
+                heuristic_value -= central_weight[i];//+ group_check(i, state) / 3;
             }
         }
         if (a == 8) return Integer.MIN_VALUE;

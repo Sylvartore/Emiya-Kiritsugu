@@ -1,15 +1,12 @@
 package sylvartore;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class AI {
 
     byte side;
     byte counterSide;
-    int nodeCount;
     String name;
     byte[] bestMove_cur;
     int max_cur;
@@ -18,7 +15,6 @@ public class AI {
     public AI(byte side, String name) {
         this.side = side;
         this.counterSide = (byte) (-1 * side);
-        nodeCount = 0;
         this.name = name;
     }
 
@@ -57,14 +53,12 @@ public class AI {
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
+        int max = Integer.MIN_VALUE, depth = 2, actual_depth = 0;
         this.state = state;
-        nodeCount = 0;
         byte[] bestMove = null;
-        int max = Integer.MIN_VALUE, depth = 2, actual = 0, actual_node = 0;
-        long left = aiTime, last;
+        long left = aiTime, last, limit = System.currentTimeMillis() + aiTime;
         do {
             if (depth > turnLeft && depth != 2 || (depth == 7 && aiTime <= 5000)) break;
-            actual = depth;
             long start = System.currentTimeMillis();
             bestMove_cur = null;
             max_cur = Integer.MIN_VALUE;
@@ -75,19 +69,54 @@ public class AI {
             }
             try {
                 executor.shutdown();
-                executor.awaitTermination(1, TimeUnit.DAYS);
+                if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
+                    System.out.println("EXIT        IN          ADVANCE");
+                    break;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            actual_node = nodeCount;
+            actual_depth = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
             max = max_cur;
             bestMove = bestMove_cur;
-        } while (left > last * 7);
-        log(bestMove, actual, max, actual_node, state);
+        } while (left > last * 6);
+        log(bestMove, actual_depth, max, state);
         return bestMove;
+    }
+
+    byte[][] stand = new byte[][]{
+            {56, 2, 1, 4},
+            {57, 2, 1, 4},
+            {59, 1, 1, 4},
+            {60, 1, 1, 4}
+    };
+
+    byte[][] bel = new byte[][]{
+            {4, 5, 1, 4},
+            {56, 2, 1, 4}
+    };
+
+    byte[][] ger = new byte[][]{
+            {17, 5, 1, 5},
+            {43, 2, 1, 5}
+    };
+
+
+    byte[] getFirstMove(int aiTime, byte[] state) {
+        Random rand = new Random();
+        if (Arrays.equals(state, Game.getStandardInitialLayout())) {
+            int n = rand.nextInt(4);
+            return stand[n];
+        }
+        if (Arrays.equals(state, Game.getBelgianDaisyLayout())) {
+            int n = rand.nextInt(2);
+            return bel[n];
+        }
+        int n = rand.nextInt(2);
+        return ger[n];
     }
 
     class Job implements Runnable {
@@ -151,7 +180,6 @@ public class AI {
     }
 
     int heuristic(byte[] state) {
-        nodeCount++;
         int a = 0, e = 0, heuristic_value = 0;
         for (int i = 0; i < state.length; i++) {
             if (state[i] == 0) continue;
@@ -167,10 +195,42 @@ public class AI {
         if (e == 8) return Integer.MAX_VALUE;
         if (e == 9) heuristic_value += 500;
         if (a == 9) heuristic_value -= 500;
+        return (a - e) * 50 + heuristic_value;
+    }
+
+    int heuristic2(byte[] state) {
+        int a = 0, e = 0, heuristic_value = 0;
+        for (int i = 0; i < state.length; i++) {
+            if (state[i] == 0) continue;
+            if (state[i] == side) {
+                a += 1;
+                heuristic_value += central_weight[i] * 2 + group_check(i, state);
+            } else {
+                e += 1;
+                heuristic_value -= central_weight[i] * 2 + group_check(i, state);
+            }
+        }
+        if (a == 8) return Integer.MIN_VALUE;
+        if (e == 8) return Integer.MAX_VALUE;
+        if (e == 9) heuristic_value += 500;
+        if (a == 9) heuristic_value -= 500;
         return (a - e) * 100 + heuristic_value;
     }
 
-//    int adjacency_check(int cell, byte[] state) {
+    int group_check(int cell, byte[] state) {
+        byte adjacent_cell = Game.TransitionMatrix[cell][0];
+        if (adjacent_cell == -1) return 0;
+        byte side = state[adjacent_cell];
+        if (side == 0) return 0;
+        for (int i = 1; i < 6; i++) {
+            adjacent_cell = Game.TransitionMatrix[cell][i];
+            if (adjacent_cell == -1 || state[adjacent_cell] != side) return 0;
+        }
+        return 3;
+    }
+
+
+//    int ad(int cell, byte[] state) {
 //        int score = 0;
 //        for (int i = 3; i < 6; i++) {
 //            byte adjacent_cell = Game.TransitionMatrix[cell][i];
@@ -181,22 +241,21 @@ public class AI {
 //        return score;
 //    }
 
-    void log(byte[] move, int depth, int max, int actual_nodes, byte[] state) {
+    void log(byte[] move, int depth, int max, byte[] state) {
         System.out.println((side == 1 ? "WHITE " : "BLACK ") + name + " AI moved: "
                 + Game.moveToString(move, state)
-                + "     max depth: " + depth + ",    " +
-                "node searched: " + actual_nodes + ",    best node found: " + max);
+                + "     max depth: " + depth + ",    best node found: " + max);
     }
 
     static byte[] central_weight = {
-            1, 1, 1, 1, 1,
-            1, 2, 2, 2, 2, 1,
-            1, 2, 3, 3, 3, 2, 1,
-            1, 2, 3, 4, 4, 3, 2, 1,
-            1, 2, 3, 5, 6, 5, 3, 2, 1,
-            1, 2, 3, 4, 4, 3, 2, 1,
-            1, 2, 3, 3, 3, 2, 1,
-            1, 2, 2, 2, 2, 1,
-            1, 1, 1, 1, 1,
+            0, 0, 0, 0, 0,
+            0, 2, 2, 2, 2, 0,
+            0, 2, 3, 3, 3, 2, 0,
+            0, 2, 3, 4, 4, 3, 2, 0,
+            0, 2, 3, 5, 6, 5, 3, 2, 0,
+            0, 2, 3, 4, 4, 3, 2, 0,
+            0, 2, 3, 3, 3, 2, 0,
+            0, 2, 2, 2, 2, 0,
+            0, 0, 0, 0, 0,
     };
 }

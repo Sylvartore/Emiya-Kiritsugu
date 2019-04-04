@@ -33,9 +33,9 @@ public class Game {
         //  ai = new Quiescent((byte) -1, "Ko5");
         //ai = new AI((byte) 1, "UI");
         //  counter = new Quiescent((byte) -1, "Ko5");
+        //   ai = new AI((byte) -1, "Main");
         ai = new AI((byte) -1, "Main");
-        // ai =new ThreadAI((byte) 1, "Thread");
-        counter = new ThreadAI((byte) 1, "Thread");
+        counter =  new ThreadAI((byte) 1, "Thread");
         gameOver = false;
     }
 
@@ -291,6 +291,25 @@ public class Game {
         move(best[0], best[1], best[2], state);
     }
 
+    public void aiFirstMove() {
+        long start = System.currentTimeMillis();
+        byte[] best = ai.getFirstMove(aiTime, state);
+        long end = System.currentTimeMillis();
+        double used = (double) (end - start) / 1000;
+        String s =  String.valueOf(total);
+        String t = String.valueOf(used);
+        turnLeft--;
+        System.out.println("Turn Left: " + turnLeft
+                + " Used: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s Total: " +
+                (s.length() > 6 ? s.substring(0, 6) : s) + "s\n");
+        log.add("Turn Left: " + turnLeft
+                + "\t" + (humanSide == -1 ? "WHITE" : "BLACK")
+                + ": " + Game.moveToString(best, state)
+                + "\tTime: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s"
+                + "\tTotal Time: " + (s.length() > 6 ? s.substring(0, 6) : s) + "s");
+        move(best[0], best[1], best[2], state);
+    }
+
     static String moveToString(byte[] move, byte[] state) {
         byte[] uiMove = toUiMove(move[0], move[1], move[2], state);
         StringBuilder sb = new StringBuilder();
@@ -414,7 +433,7 @@ public class Game {
             {8, 4}, {8, 6}, {8, 8}, {8, 10}, {8, 12},
     };
 
-    public byte[] getStandardInitialLayout() {
+    public static byte[] getStandardInitialLayout() {
         return new byte[]{
                 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 1,
@@ -428,7 +447,7 @@ public class Game {
         };
     }
 
-    public byte[] getGermanDaisyLayout() {
+    public static byte[] getGermanDaisyLayout() {
         return new byte[]{
                 0, 0, 0, 0, 0,
                 1, 1, 0, 0, -1, -1,
@@ -442,7 +461,7 @@ public class Game {
         };
     }
 
-    public byte[] getBelgianDaisyLayout() {
+    public static byte[] getBelgianDaisyLayout() {
         return new byte[]{
                 1, 1, 0, -1, -1,
                 1, 1, 1, -1, -1, -1,
