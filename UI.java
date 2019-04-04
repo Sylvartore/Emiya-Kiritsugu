@@ -67,7 +67,6 @@ public class UI extends Application {
         add_ger(btnRow);
         add_start(btnRow);
         add_ava(btnRow);
-        //   add_ko5(btnRow);
         root.getChildren().add(btnRow);
         HBox textRow = new HBox();
         add_time_limit(textRow);
@@ -92,6 +91,9 @@ public class UI extends Application {
         file_log.setPrefWidth(120);
         file_log.setOnMouseClicked(event -> game.outputLog(false));
         loggerRow.getChildren().add(file_log);
+
+        switch_qui(loggerRow);
+        switch_main(loggerRow);
         root.getChildren().add(loggerRow);
     }
 
@@ -150,15 +152,28 @@ public class UI extends Application {
         btnRow.getChildren().add(AivAi);
     }
 
-    void add_ko5(HBox btnRow) {
-        Button ko5 = new Button();
-        ko5.setText("Ko5 up");
-        ko5.setPrefWidth(120);
-        ko5.setOnMouseClicked(event -> {
-            game.ai = new Quiescent(game.ai.side, "Ko5");
+    void switch_qui(HBox btnRow) {
+        Button quies = new Button();
+        quies.setText("Quiescence");
+        quies.setPrefWidth(120);
+        quies.setOnMouseClicked(event -> {
+            game.ai = new Quiescent(game.ai.side, "Quiescence");
+            System.out.println("switch to Q");
         });
-        btnRow.getChildren().add(ko5);
+        btnRow.getChildren().add(quies);
     }
+
+    void switch_main(HBox btnRow) {
+        Button main = new Button();
+        main.setText("Main");
+        main.setPrefWidth(120);
+        main.setOnMouseClicked(event -> {
+            game.ai = new AI(game.ai.side, "Main");
+            System.out.println("switch to M");
+        });
+        btnRow.getChildren().add(main);
+    }
+
 
     void mainAiMove() {
         (new Thread(() -> {
@@ -304,6 +319,7 @@ public class UI extends Application {
                 Platform.runLater(() -> game.update());
                 humanTurn = true;
                 resetTime();
+                game.aiFinished = System.currentTimeMillis();
             })).start();
         });
         btnRow.getChildren().add(aiStart);
@@ -314,9 +330,9 @@ public class UI extends Application {
         humanStart.setOnMouseClicked(event -> {
             game.ai.side = (byte) 1;
             game.humanSide = (byte) -1;
+            pause = false;
             humanTurn = true;
             resetTime();
-            pause = false;
             game.aiFinished = System.currentTimeMillis();
         });
         btnRow.getChildren().add(humanStart);

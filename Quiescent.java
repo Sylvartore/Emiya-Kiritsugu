@@ -11,11 +11,11 @@ public class Quiescent extends AI {
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
-        int max = Integer.MIN_VALUE, depth = 2, actual = 1, actual_node = 0;
+        int depth = 2;
+      //  int max = Integer.MIN_VALUE,  actual = 1;
         this.state = state;
         byte[] bestMove = null;
         long limit = System.currentTimeMillis() + aiTime, left = aiTime, last;
-        out:
         do {
             if (depth > turnLeft && depth != 2 || (depth == 7 && aiTime <= 5000)) break;
             long start = System.currentTimeMillis();
@@ -24,26 +24,25 @@ public class Quiescent extends AI {
             List<byte[]> moves = getAllPossibleMoves(side, state);
             ExecutorService executor = Executors.newFixedThreadPool(4);
             for (byte[] move : moves) {
-                if (System.currentTimeMillis() > limit - 20) {
-                    System.out.println("EXIT            IN          ADVANCE!");
-                    break out;
-                }
-                executor.execute(new Job(move, depth, turnLeft));
+                executor.execute(new Job(move, depth - 1, turnLeft - 1));
             }
             try {
                 executor.shutdown();
-                executor.awaitTermination(1, TimeUnit.DAYS);
+                if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
+                 //   System.out.println("EXIT        IN          ADVANCE");
+                    break;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            actual = depth;
+         //   actual = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
-            max = max_cur;
+         //   max = max_cur;
             bestMove = bestMove_cur;
-        } while ((left / 7) > last);
-        log(bestMove, actual, max, state);
+        } while ((left) > last * 10);
+       // log(bestMove, actual, max, state);
         return bestMove;
     }
 
@@ -63,7 +62,7 @@ public class Quiescent extends AI {
             byte[] copy = new byte[state.length];
             System.arraycopy(state, 0, copy, 0, state.length);
             Game.move(move[0], move[1], move[2], copy);
-            int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth - 1, turnLeft - 1);
+            int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth, turnLeft);
             if (bestMove_cur == null || utility > max_cur) {
                 max_cur = utility;
                 bestMove_cur = move;

@@ -53,7 +53,8 @@ public class AI {
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
-        int max = Integer.MIN_VALUE, depth = 2, actual_depth = 0;
+        //int max = Integer.MIN_VALUE, actual_depth = 0;
+        int depth = 2;
         this.state = state;
         byte[] bestMove = null;
         long left = aiTime, last, limit = System.currentTimeMillis() + aiTime;
@@ -70,53 +71,21 @@ public class AI {
             try {
                 executor.shutdown();
                 if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
-                    System.out.println("EXIT        IN          ADVANCE");
+                    //  System.out.println("EXIT        IN          ADVANCE");
                     break;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            actual_depth = depth;
+            // actual_depth = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
-            max = max_cur;
+            //   max = max_cur;
             bestMove = bestMove_cur;
         } while (left > last * 6);
-        log(bestMove, actual_depth, max, state);
+        //  log(bestMove, actual_depth, max, state);
         return bestMove;
-    }
-
-    byte[][] stand = new byte[][]{
-            {56, 2, 1, 4},
-            {57, 2, 1, 4},
-            {59, 1, 1, 4},
-            {60, 1, 1, 4}
-    };
-
-    byte[][] bel = new byte[][]{
-            {4, 5, 1, 4},
-            {56, 2, 1, 4}
-    };
-
-    byte[][] ger = new byte[][]{
-            {17, 5, 1, 5},
-            {43, 2, 1, 5}
-    };
-
-
-    byte[] getFirstMove(int aiTime, byte[] state) {
-        Random rand = new Random();
-        if (Arrays.equals(state, Game.getStandardInitialLayout())) {
-            int n = rand.nextInt(4);
-            return stand[n];
-        }
-        if (Arrays.equals(state, Game.getBelgianDaisyLayout())) {
-            int n = rand.nextInt(2);
-            return bel[n];
-        }
-        int n = rand.nextInt(2);
-        return ger[n];
     }
 
     class Job implements Runnable {
@@ -179,35 +148,35 @@ public class AI {
         return value;
     }
 
+//    int heuristic(byte[] state) {
+//        int a = 0, e = 0, heuristic_value = 0;
+//        for (int i = 0; i < state.length; i++) {
+//            if (state[i] == 0) continue;
+//            if (state[i] == side) {
+//                a += 1;
+//                heuristic_value += central_weight[i];
+//            } else {
+//                e += 1;
+//                heuristic_value -= central_weight[i];
+//            }
+//        }
+//        if (a == 8) return Integer.MIN_VALUE;
+//        if (e == 8) return Integer.MAX_VALUE;
+//        if (e == 9) heuristic_value += 500;
+//        if (a == 9) heuristic_value -= 500;
+//        return (a - e) * 50 + heuristic_value;
+//    }
+
     int heuristic(byte[] state) {
         int a = 0, e = 0, heuristic_value = 0;
         for (int i = 0; i < state.length; i++) {
             if (state[i] == 0) continue;
             if (state[i] == side) {
                 a += 1;
-                heuristic_value += central_weight[i];
+                heuristic_value += central_weight[i] + group_check(i, state);
             } else {
                 e += 1;
-                heuristic_value -= central_weight[i];
-            }
-        }
-        if (a == 8) return Integer.MIN_VALUE;
-        if (e == 8) return Integer.MAX_VALUE;
-        if (e == 9) heuristic_value += 500;
-        if (a == 9) heuristic_value -= 500;
-        return (a - e) * 50 + heuristic_value;
-    }
-
-    int heuristic2(byte[] state) {
-        int a = 0, e = 0, heuristic_value = 0;
-        for (int i = 0; i < state.length; i++) {
-            if (state[i] == 0) continue;
-            if (state[i] == side) {
-                a += 1;
-                heuristic_value += central_weight[i] * 2 + group_check(i, state);
-            } else {
-                e += 1;
-                heuristic_value -= central_weight[i] * 2 + group_check(i, state);
+                heuristic_value -= central_weight[i] + group_check(i, state);
             }
         }
         if (a == 8) return Integer.MIN_VALUE;
@@ -226,7 +195,7 @@ public class AI {
             adjacent_cell = Game.TransitionMatrix[cell][i];
             if (adjacent_cell == -1 || state[adjacent_cell] != side) return 0;
         }
-        return 3;
+        return 4;
     }
 
 
@@ -247,15 +216,58 @@ public class AI {
                 + "     max depth: " + depth + ",    best node found: " + max);
     }
 
+//    static byte[] central_weight = {
+//            0, 0, 0, 0, 0,
+//            0, 2, 2, 2, 2, 0,
+//            0, 2, 3, 3, 3, 2, 0,
+//            0, 2, 3, 4, 4, 3, 2, 0,
+//            0, 2, 3, 5, 6, 5, 3, 2, 0,
+//            0, 2, 3, 4, 4, 3, 2, 0,
+//            0, 2, 3, 3, 3, 2, 0,
+//            0, 2, 2, 2, 2, 0,
+//            0, 0, 0, 0, 0,
+//    };
+
     static byte[] central_weight = {
             0, 0, 0, 0, 0,
-            0, 2, 2, 2, 2, 0,
-            0, 2, 3, 3, 3, 2, 0,
-            0, 2, 3, 4, 4, 3, 2, 0,
-            0, 2, 3, 5, 6, 5, 3, 2, 0,
-            0, 2, 3, 4, 4, 3, 2, 0,
-            0, 2, 3, 3, 3, 2, 0,
-            0, 2, 2, 2, 2, 0,
+            0, 4, 4, 4, 4, 0,
+            0, 4, 6, 6, 6, 4, 0,
+            0, 4, 6, 8, 8, 6, 4, 0,
+            0, 4, 6, 8, 10, 8, 6, 4, 0,
+            0, 4, 6, 8, 8, 6, 4, 0,
+            0, 4, 6, 6, 6, 4, 0,
+            0, 4, 4, 4, 4, 0,
             0, 0, 0, 0, 0,
     };
+
+    byte[][] stand = new byte[][]{
+            {56, 2, 1, 4},
+            {57, 2, 1, 4},
+            {59, 1, 1, 4},
+            {60, 1, 1, 4}
+    };
+
+    byte[][] bel = new byte[][]{
+            {4, 5, 1, 4},
+            {56, 2, 1, 4}
+    };
+
+    byte[][] ger = new byte[][]{
+            {17, 5, 1, 5},
+            {43, 2, 1, 5}
+    };
+
+    byte[] getFirstMove(byte[] state) {
+        Random rand = new Random();
+        if (Arrays.equals(state, Game.getStandardInitialLayout())) {
+            int n = rand.nextInt(4);
+            return stand[n];
+        }
+        if (Arrays.equals(state, Game.getBelgianDaisyLayout())) {
+            int n = rand.nextInt(2);
+            return bel[n];
+        }
+        int n = rand.nextInt(2);
+        return ger[n];
+    }
 }

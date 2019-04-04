@@ -10,7 +10,8 @@ public class ThreadAI extends AI {
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
-        int max = Integer.MIN_VALUE, depth = 2, actual_depth = 0;
+        int depth = 2;
+        // int max = Integer.MIN_VALUE, actual_depth = 0;
         this.state = state;
         byte[] bestMove = null;
         long left = aiTime, last, limit = System.currentTimeMillis() + aiTime;
@@ -27,20 +28,20 @@ public class ThreadAI extends AI {
             try {
                 executor.shutdown();
                 if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
-                    System.out.println("EXIT        IN          ADVANCE");
+                    // System.out.println("EXIT        IN          ADVANCE");
                     break;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            actual_depth = depth;
+            // actual_depth = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
-            max = max_cur;
+            //  max = max_cur;
             bestMove = bestMove_cur;
         } while (left > last * 6);
-        log(bestMove, actual_depth, max,  state);
+        //log(bestMove, actual_depth, max,  state);
         return bestMove;
     }
 
@@ -72,7 +73,7 @@ public class ThreadAI extends AI {
 
     int min(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return heuristic2(state);
+            return heuristic(state);
         }
         int value = Integer.MAX_VALUE;
         for (byte[] move : getAllPossibleMoves(counterSide, state)) {
@@ -89,7 +90,7 @@ public class ThreadAI extends AI {
 
     int max(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return heuristic2(state);
+            return heuristic(state);
         }
         int value = Integer.MIN_VALUE;
         for (byte[] move : getAllPossibleMoves(side, state)) {

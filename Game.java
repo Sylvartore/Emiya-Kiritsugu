@@ -30,12 +30,9 @@ public class Game {
         aiTime = 5000;
         prev = null;
         log = new ArrayList<>();
-        //  ai = new Quiescent((byte) -1, "Ko5");
-        //ai = new AI((byte) 1, "UI");
-        //  counter = new Quiescent((byte) -1, "Ko5");
         //   ai = new AI((byte) -1, "Main");
-        ai = new AI((byte) -1, "Main");
-        counter =  new ThreadAI((byte) 1, "Thread");
+        ai = new Quiescent((byte) 1, "Quiescent");
+        counter = new AI((byte) -1, "Main");//new ThreadAI((byte) 1, "Thread");
         gameOver = false;
     }
 
@@ -162,7 +159,7 @@ public class Game {
         byte ally1Cell = TransitionMatrix[cell][ssd];
         if (ally1Cell == -1 || state[cell] != state[ally1Cell]) return false;
         byte ally1SsdCell = TransitionMatrix[ally1Cell][d];
-        if (state[ally1SsdCell] != 0) return false;
+        if (ally1SsdCell == -1 || state[ally1SsdCell] != 0) return false;
         if (n == 3) {
             byte ally2Cell = TransitionMatrix[ally1Cell][ssd];
             if (ally2Cell == -1 || state[cell] != state[ally2Cell]) return false;
@@ -279,24 +276,25 @@ public class Game {
         String s = (ai == this.ai) ? String.valueOf(total) : String.valueOf(total2);
         String t = String.valueOf(used);
         turnLeft--;
-        System.out.println("Turn Left: " + turnLeft
+        String moved = Game.moveToString(best, state);
+        System.out.println((ai.side == -1 ? "WHITE" : "BLACK") + " AI "
+                + ai.name + " moved: " + moved + "Turn Left: " + turnLeft
                 + " Used: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s Total: " +
                 (s.length() > 6 ? s.substring(0, 6) : s) + "s\n");
         log.add("Turn Left: " + turnLeft
                 + "\t" + (humanSide == -1 ? "WHITE" : "BLACK")
-                + ": " + Game.moveToString(best, state)
+                + ": " + moved
                 + "\tTime: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s"
                 + "\tTotal Time: " + (s.length() > 6 ? s.substring(0, 6) : s) + "s");
-
         move(best[0], best[1], best[2], state);
     }
 
     public void aiFirstMove() {
         long start = System.currentTimeMillis();
-        byte[] best = ai.getFirstMove(aiTime, state);
+        byte[] best = ai.getFirstMove(state);
         long end = System.currentTimeMillis();
         double used = (double) (end - start) / 1000;
-        String s =  String.valueOf(total);
+        String s = String.valueOf(total);
         String t = String.valueOf(used);
         turnLeft--;
         System.out.println("Turn Left: " + turnLeft
