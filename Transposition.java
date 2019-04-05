@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Transposition extends AI {
 
-    public Transposition(byte side, String name) {
-        super(side, name);
+    public Transposition(byte side) {
+        super(side,"Trans");
     }
 
     HashMap<Integer, int[]> map = new HashMap<>();

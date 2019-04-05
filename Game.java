@@ -3,7 +3,9 @@ package sylvartore;
 import javafx.scene.paint.Color;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Game {
     byte state[];
@@ -31,8 +33,8 @@ public class Game {
         prev = null;
         log = new ArrayList<>();
         //   ai = new AI((byte) -1, "Main");
-        ai = new Quiescent((byte) 1, "Quiescent");
-        counter = new AI((byte) -1, "Main");//new ThreadAI((byte) 1, "Thread");
+        ai = new AI((byte) -1, "Main");
+        counter = new Gaara((byte) 1);
         gameOver = false;
     }
 
@@ -63,8 +65,8 @@ public class Game {
         log = source.log;
     }
 
-    public static int isValidMove(byte cell, byte d, byte n, byte[] state) {
-        if (state[cell] == 0) return -1;
+    public static byte isValidMove(byte cell, byte d, byte n, byte[] state) {
+        if (state[cell] == 0) return (byte) -1;
         byte targetCell = TransitionMatrix[cell][d];
         if (targetCell == -1) return -1;
         if (n == 1) {
@@ -74,9 +76,9 @@ public class Game {
             if (state[targetCell] != 0) return -1;
             byte ssd = d;
             if (++ssd == 6) ssd = 0;
-            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? 6 : 7;
+            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 6 : (byte) 7;
             if (++ssd == 6) ssd = 0;
-            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? 6 : 7;
+            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 6 : (byte) 7;
             return -1;
         }
     }
@@ -110,17 +112,17 @@ public class Game {
         return ally2SsdCell != -1 && state[ally2SsdCell] == 0;
     }
 
-    public static int canInline(byte cell, byte targetCell, byte d, byte[] state) {
+    public static byte canInline(byte cell, byte targetCell, byte d, byte[] state) {
         byte force = 0;
         while (++force <= 3 && targetCell != -1 && state[targetCell] == state[cell]) {
             targetCell = TransitionMatrix[targetCell][d];
         }
-        if (force > 3 || targetCell == -1) return -1;
+        if (force > 3 || targetCell == -1) return (byte) -1;
         int[] counterForce = getForce(targetCell, d, state);
         if (!(force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]))) return -1;
-        if (counterForce[0] == -1) return (force == 3) ? 0 : 1; // capturing
-        if (counterForce[1] == 0) return (force == 3) ? 4 : 5; // inline
-        return (force == 3) ? 2 : 3; // attacking
+        if (counterForce[0] == -1) return (force == 3) ? 0 : (byte) 1; // capturing
+        if (counterForce[1] == 0) return (force == 3) ? (byte) 4 : (byte) 5; // inline
+        return (force == 3) ? (byte) 2 : (byte) 3; // attacking
     }
 
     public static void move(byte cell, byte d, byte n, byte[] state) {
@@ -277,7 +279,7 @@ public class Game {
         String t = String.valueOf(used);
         turnLeft--;
         String moved = Game.moveToString(best, state);
-        System.out.println((ai.side == -1 ? "WHITE" : "BLACK") + " AI "
+        System.out.println((ai.side == 1 ? "WHITE" : "BLACK") + " AI "
                 + ai.name + " moved: " + moved + "Turn Left: " + turnLeft
                 + " Used: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s Total: " +
                 (s.length() > 6 ? s.substring(0, 6) : s) + "s\n");
@@ -485,5 +487,48 @@ public class Game {
             "B1", "B2", "B3", "B4", "B5", "B6",
             "A1", "A2", "A3", "A4", "A5"
     };
+
+    public static void print(byte[] state) {
+        StringBuilder sb = new StringBuilder();
+        int spaces = 4, n = 0, m = 5;
+        boolean decre = true;
+        char x = 'I', y = '9';
+        for (byte aState : state) {
+            if (n == m) {
+                sb.append('\n');
+                n = 0;
+                m += decre ? 1 : -1;
+            }
+            if (n == 0) {
+                for (int i = 0; i < spaces; i++) {
+                    sb.append(' ');
+                }
+                sb.append(x--).append(' ');
+            }
+
+            char a = ' ';
+            switch (aState) {
+                case -1:
+                    a = '@';
+                    break;
+                case 0:
+                    a = '+';
+                    break;
+                case 1:
+                    a = 'O';
+                    break;
+            }
+            sb.append(a).append(' ');
+            n++;
+            if (n == m) {
+                if (n != 9 && !decre) sb.append(y--);
+
+                if (m == 9) decre = !decre;
+                spaces += decre ? -1 : 1;
+            }
+        }
+        sb.append("\n      1 2 3 4 5 \n");
+        System.out.println(String.valueOf(sb));
+    }
 
 }

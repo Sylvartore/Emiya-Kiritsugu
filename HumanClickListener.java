@@ -42,7 +42,6 @@ public class HumanClickListener implements EventHandler<MouseEvent> {
         if (Game.isValidMove(id, d, n, game.state) != -1) {
             double used = (double) (System.currentTimeMillis() - game.aiFinished) / 1000;
             game.total2 += used;
-            System.out.println("asd" + game.total2);
             game.turnLeft--;
             String t = String.valueOf(game.total2);
             String s = String.valueOf(used);

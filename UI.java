@@ -154,11 +154,11 @@ public class UI extends Application {
 
     void switch_qui(HBox btnRow) {
         Button quies = new Button();
-        quies.setText("Quiescence");
+        quies.setText("Gaara");
         quies.setPrefWidth(120);
         quies.setOnMouseClicked(event -> {
-            game.ai = new Quiescent(game.ai.side, "Quiescence");
-            System.out.println("switch to Q");
+            game.ai = new Gaara(game.ai.side);
+            System.out.println("Gaara is up!");
         });
         btnRow.getChildren().add(quies);
     }
@@ -309,7 +309,7 @@ public class UI extends Application {
         aiStart.setText("AI Start");
         aiStart.setPrefWidth(120);
         aiStart.setOnMouseClicked(event -> {
-            game.ai.side = (byte) -1;
+            game.ai.changeTo((byte) -1);
             game.humanSide = (byte) 1;
             humanTurn = false;
             resetTime();
@@ -328,7 +328,7 @@ public class UI extends Application {
         humanStart.setText("Human Start");
         humanStart.setPrefWidth(120);
         humanStart.setOnMouseClicked(event -> {
-            game.ai.side = (byte) 1;
+            game.ai.changeTo((byte) 1);
             game.humanSide = (byte) -1;
             pause = false;
             humanTurn = true;

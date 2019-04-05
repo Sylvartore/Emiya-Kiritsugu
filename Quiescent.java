@@ -6,13 +6,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class Quiescent extends AI {
-    public Quiescent(byte side, String name) {
-        super(side, name);
+    public Quiescent(byte side) {
+        super(side, "Quiescent");
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
         int depth = 2;
-      //  int max = Integer.MIN_VALUE,  actual = 1;
+        int max = Integer.MIN_VALUE, actual = 1;
         this.state = state;
         byte[] bestMove = null;
         long limit = System.currentTimeMillis() + aiTime, left = aiTime, last;
@@ -29,20 +29,20 @@ public class Quiescent extends AI {
             try {
                 executor.shutdown();
                 if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
-                 //   System.out.println("EXIT        IN          ADVANCE");
+                    System.out.println("EXIT        IN          ADVANCE");
                     break;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-         //   actual = depth;
+            actual = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
-         //   max = max_cur;
+            max = max_cur;
             bestMove = bestMove_cur;
         } while ((left) > last * 10);
-       // log(bestMove, actual, max, state);
+        log(bestMove, actual, max, state);
         return bestMove;
     }
 
@@ -78,7 +78,7 @@ public class Quiescent extends AI {
             byte[] copy = new byte[state.length];
             System.arraycopy(state, 0, copy, 0, state.length);
             Game.move(move[0], move[1], move[2], copy);
-            score = quiesce_max(alpha, beta, turn - 1, copy);
+            score = max2(copy, alpha, beta, 3, turn - 1);
             if (score <= beta) {
                 beta = score;
                 if (score <= alpha) break;
@@ -113,7 +113,7 @@ public class Quiescent extends AI {
             byte[] copy = new byte[state.length];
             System.arraycopy(state, 0, copy, 0, state.length);
             Game.move(move[0], move[1], move[2], copy);
-            score = quiesce_min(alpha, beta, turn - 1, copy);
+            score = min2(copy, alpha, beta, 3, turn - 1);
             if (score >= alpha) {
                 alpha = score;
                 if (score >= beta) break;
@@ -138,35 +138,5 @@ public class Quiescent extends AI {
             if (utility > alpha) alpha = utility;
         }
         return value;
-    }
-
-    int group_check(int cell, byte[] state) {
-        int score = 0;
-        for (int i = 3; i < 6; i++) {
-            byte adjacent_cell = Game.TransitionMatrix[cell][i];
-            if (adjacent_cell != -1 && state[adjacent_cell] == state[cell]) {
-                score += 1;
-            }
-        }
-        return score;
-    }
-
-    int heuristic(byte[] state) {
-        int a = 0, e = 0, heuristic_value = 0;
-        for (int i = 0; i < state.length; i++) {
-            if (state[i] == 0) continue;
-            if (state[i] == side) {
-                a += 1;
-                heuristic_value += central_weight[i]; //+ group_check(i, state) / 3;
-            } else {
-                e += 1;
-                heuristic_value -= central_weight[i];//+ group_check(i, state) / 3;
-            }
-        }
-        if (a == 8) return Integer.MIN_VALUE;
-        if (e == 8) return Integer.MAX_VALUE;
-        if (e == 9) heuristic_value += 500;
-        if (a == 9) heuristic_value -= 500;
-        return (a - e) * 100 + heuristic_value;
     }
 }

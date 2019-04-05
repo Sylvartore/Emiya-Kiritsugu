@@ -3,15 +3,15 @@ package sylvartore;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class ThreadAI extends AI {
+public class Gaara extends AI {
 
-    public ThreadAI(byte side, String name) {
-        super(side, name);
+    public Gaara(byte side) {
+        super(side, "Gaara");
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
         int depth = 2;
-        // int max = Integer.MIN_VALUE, actual_depth = 0;
+        int max = Integer.MIN_VALUE, actual_depth = 0;
         this.state = state;
         byte[] bestMove = null;
         long left = aiTime, last, limit = System.currentTimeMillis() + aiTime;
@@ -28,20 +28,20 @@ public class ThreadAI extends AI {
             try {
                 executor.shutdown();
                 if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
-                    // System.out.println("EXIT        IN          ADVANCE");
+                    System.out.println("EXIT        IN          ADVANCE");
                     break;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            // actual_depth = depth;
+            actual_depth = depth;
             last = System.currentTimeMillis() - start;
             left -= last;
             depth++;
-            //  max = max_cur;
+            max = max_cur;
             bestMove = bestMove_cur;
-        } while (left > last * 6);
-        //log(bestMove, actual_depth, max,  state);
+        } while (left > last * 20);
+        log(bestMove, actual_depth, max, state);
         return bestMove;
     }
 
@@ -73,7 +73,7 @@ public class ThreadAI extends AI {
 
     int min(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return heuristic(state);
+            return heuristic2(state);
         }
         int value = Integer.MAX_VALUE;
         for (byte[] move : getAllPossibleMoves(counterSide, state)) {
@@ -90,7 +90,7 @@ public class ThreadAI extends AI {
 
     int max(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return heuristic(state);
+            return heuristic2(state);
         }
         int value = Integer.MIN_VALUE;
         for (byte[] move : getAllPossibleMoves(side, state)) {
