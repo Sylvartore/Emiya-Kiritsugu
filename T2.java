@@ -11,7 +11,7 @@ public class T2 extends TestAI {
     //    HashMap<Long, int[]> map;
 //    HashMap<Long, int[]> map2;
     int col;
-    final int size = 1000000;
+    final int size = 1<<28;
 
     class struct {
         int depth;
