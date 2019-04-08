@@ -1,18 +1,24 @@
 package sylvartore;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-public class Gaara extends AI {
-
-    public Gaara(byte side) {
-        super(side, "Gaara");
+public class Rival extends AI {
+    public Rival(byte side) {
+        super(side, "Rival");
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
-        depth = 3;
         int max = Integer.MIN_VALUE, actual_depth = 0;
         this.state = state;
+        depth = 3;
+        sum2 = 0;
+        bc = 0;
+        cc = 0;
+        sum = 0;
+        c = 0;
         byte[] bestMove = null;
         long left = aiTime, last, limit = System.currentTimeMillis() + aiTime;
         do {
@@ -29,7 +35,7 @@ public class Gaara extends AI {
                     Game.move(move[0], move[1], move[2], copy);
                     int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth, turnLeft);
                     synchronized (this) {
-                        if (bestMove_cur == null || utility > max_cur) {
+                        if (utility > max_cur) {
                             max_cur = utility;
                             bestMove_cur = move;
                         }
@@ -42,6 +48,7 @@ public class Gaara extends AI {
                     System.out.println("EXIT        IN          ADVANCE");
                     break;
                 }
+                executor.awaitTermination(1, TimeUnit.DAYS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -51,14 +58,16 @@ public class Gaara extends AI {
             depth++;
             max = max_cur;
             bestMove = bestMove_cur;
-        } while (left > last * 20);
+        } while (left > last * 8);
         log(bestMove, actual_depth, max, state);
-        return bestMove_cur;
+//        System.out.println("Ally: " + sum + " count " + c + " average " + (double) sum / c);
+//        System.out.println("enemy: " + sum2 + " count " + cc + " average " + (double) sum2 / cc);
+        return bestMove;
     }
 
     int min(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return gaara(state);
+            return heuristic(state);
         }
         int value = Integer.MAX_VALUE;
         for (byte[] move : getAllPossibleMoves(counterSide, state)) {
@@ -75,7 +84,7 @@ public class Gaara extends AI {
 
     int max(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return gaara(state);
+            return heuristic(state);
         }
         int value = Integer.MIN_VALUE;
         for (byte[] move : getAllPossibleMoves(side, state)) {
@@ -90,4 +99,3 @@ public class Gaara extends AI {
         return value;
     }
 }
-

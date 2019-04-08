@@ -92,8 +92,8 @@ public class UI extends Application {
         file_log.setOnMouseClicked(event -> game.outputLog(false));
         loggerRow.getChildren().add(file_log);
 
-        switch_qui(loggerRow);
-        switch_main(loggerRow);
+//        switch_qui(loggerRow);
+//        switch_main(loggerRow);
         root.getChildren().add(loggerRow);
     }
 
@@ -141,6 +141,7 @@ public class UI extends Application {
         AivAi.setText("AI vs AI");
         AivAi.setPrefWidth(120);
         AivAi.setOnMouseClicked(event -> {
+            System.out.println("AI vs AI start: ");
             humanTurn = false;
             game.humanSide = 0;
             if (game.ai.side == -1) {
@@ -152,27 +153,27 @@ public class UI extends Application {
         btnRow.getChildren().add(AivAi);
     }
 
-    void switch_qui(HBox btnRow) {
-        Button quies = new Button();
-        quies.setText("Gaara");
-        quies.setPrefWidth(120);
-        quies.setOnMouseClicked(event -> {
-            game.ai = new Gaara(game.ai.side);
-            System.out.println("Gaara is up!");
-        });
-        btnRow.getChildren().add(quies);
-    }
-
-    void switch_main(HBox btnRow) {
-        Button main = new Button();
-        main.setText("Main");
-        main.setPrefWidth(120);
-        main.setOnMouseClicked(event -> {
-            game.ai = new AI(game.ai.side, "Main");
-            System.out.println("switch to M");
-        });
-        btnRow.getChildren().add(main);
-    }
+//    void switch_qui(HBox btnRow) {
+//        Button quies = new Button();
+//        quies.setText("Gaara");
+//        quies.setPrefWidth(120);
+//        quies.setOnMouseClicked(event -> {
+//            game.ai = new Gaara(game.ai.side);
+//            System.out.println("Gaara is up!");
+//        });
+//        btnRow.getChildren().add(quies);
+//    }
+//
+//    void switch_main(HBox btnRow) {
+//        Button main = new Button();
+//        main.setText("Main");
+//        main.setPrefWidth(120);
+//        main.setOnMouseClicked(event -> {
+//            game.ai = new AI(game.ai.side, "Main");
+//            System.out.println("switch to M");
+//        });
+//        btnRow.getChildren().add(main);
+//    }
 
 
     void mainAiMove() {
@@ -247,7 +248,7 @@ public class UI extends Application {
 
     void add_time_limit(HBox textRow) {
         TextField timeLimit = new TextField();
-        timeLimit.setText("5000");
+        timeLimit.setText("10000");
         textRow.getChildren().add(timeLimit);
 
         Button setTimeLimit = new Button();
@@ -280,7 +281,7 @@ public class UI extends Application {
 
     void add_turn_limit(HBox textRow) {
         TextField turnLimit = new TextField();
-        turnLimit.setText("100");
+        turnLimit.setText("80");
         textRow.getChildren().add(turnLimit);
 
         Button setTurn = new Button();

@@ -11,7 +11,7 @@ public class T2 extends TestAI {
     //    HashMap<Long, int[]> map;
 //    HashMap<Long, int[]> map2;
     int col;
-    final int size = 1<<28;
+    final int size = 1 << 28;
 
     class struct {
         int depth;
@@ -41,7 +41,7 @@ public class T2 extends TestAI {
     }
 
     public T2(byte side) {
-        this(side, 5);
+        this(side, 4);
     }
 
 
@@ -87,7 +87,7 @@ public class T2 extends TestAI {
         if (pro != null) return pro;
         if (depth == 0) {
             count++;
-            int val = heuristic(state);
+            int val = belgian(state);
             record(key, depth, 0, val, true);
             return val;
         }
@@ -115,7 +115,7 @@ public class T2 extends TestAI {
         if (pro != null) return pro;
         if (depth == 0) {
             count++;
-            int val = heuristic(state);
+            int val = belgian(state);
             record(key, depth, 0, val, false);
             return val;
         }
@@ -139,13 +139,11 @@ public class T2 extends TestAI {
     Integer probe(long zkey, int depth, int alpha, int beta, boolean isMin) {
         int key = (int) (zkey % size);
         struct s = isMin ? t1[key] : t2[key];
-        if (s != null) {
-            if (s.key == zkey && s.depth >= depth) {
-                Pcount++;
-                if (s.f == 0) return s.val;
-                if (s.f == 1 && s.val <= alpha) return alpha;
-                if (s.f == 2 && s.val >= beta) return beta;
-            }
+        if (s != null && s.key == zkey && s.depth >= depth) {
+            Pcount++;
+            if (s.f == 0) return s.val;
+            if (s.f == 1 && s.val <= alpha) return alpha;
+            if (s.f == 2 && s.val >= beta) return beta;
         }
         return null;
     }
@@ -154,15 +152,19 @@ public class T2 extends TestAI {
         int key = (int) (zkey % size);
         if (isMin) {
 //            synchronized (this) {
-            if (t1[key] != null && t1[key].key != zkey) {
-                col++;
+            if (t1[key] != null) {
+                if (t1[key].key != zkey)
+                    col++;
+                else if (t1[key].depth > depth) return;
             }
             t1[key] = new struct(depth, f, val, zkey);
 //            }
         } else {
 //            synchronized (this) {
-            if (t2[key] != null && t2[key].key != zkey) {
-                col++;
+            if (t2[key] != null) {
+                if (t2[key].key != zkey)
+                    col++;
+                else if (t2[key].depth > depth) return;
             }
             t2[key] = new struct(depth, f, val, zkey);
 //            }

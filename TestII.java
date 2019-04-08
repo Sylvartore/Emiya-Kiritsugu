@@ -6,20 +6,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class TestAI extends AI {
-    int depth;
+public class TestII extends TestAI {
 
-    public TestAI(byte side) {
-        super(side, "TEST AI");
+
+    public TestII(byte side, int depth) {
+        super(side, "Test II");
+        this.depth = depth;
     }
 
-    public TestAI(byte side, String name) {
-        super(side, name);
+    public TestII(byte side) {
+        this(side, 4);
     }
 
-
-    int max;
-    byte[] best;
+    byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
+        return getBestMove_1(state);
+    }
 
     byte[] getBestMove_1(byte[] state) {
         count = 0;
@@ -31,7 +32,7 @@ public class TestAI extends AI {
                 byte[] copy = new byte[state.length];
                 System.arraycopy(state, 0, copy, 0, state.length);
                 Game.move(move[0], move[1], move[2], copy);
-                int utility = min_1(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, 4);
+                int utility = min_1(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth);
                 synchronized (this) {
                     if (utility > max) {
                         max = utility;
@@ -40,6 +41,7 @@ public class TestAI extends AI {
                 }
             });
         }
+
         try {
             executor.shutdown();
             executor.awaitTermination(1, TimeUnit.DAYS);

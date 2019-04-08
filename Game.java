@@ -16,34 +16,39 @@ public class Game {
     double total2;
     AI ai;
     AI counter;
+    AI  tester;
+    boolean testMode = false;//true;
+    TestAI tester2;
     byte humanSide;
     boolean gameOver;
     UI ui;
     ArrayList<String> log;
     long aiFinished;
-    static Zobrist z = new Zobrist();
 
     public Game() {
         state = new byte[61];
         humanSide = 0;
         total = 0;
         total2 = 0;
-        turnLeft = 100;
-        aiTime = 5000;
+        turnLeft = 80;
+        aiTime = 10000;
         prev = null;
         log = new ArrayList<>();
         //   ai = new AI((byte) -1, "Main");
-        ai = new AI((byte) -1, "Main");
-        counter = new Gaara((byte) 1);
+        ai = new AI((byte) -1);
+        counter = new Rival((byte) 1);
+        // counter = new Gaara((byte) 1);
         gameOver = false;
+        tester = new T3((byte) -1);
+        // tester2 = new TestII((byte) -1);
     }
 
     public void reset() {
         humanSide = 0;
         total = 0;
         total2 = 0;
-        aiTime = 5000;
-        turnLeft = 100;
+        aiTime = 10000;
+        turnLeft = 80;
         prev = null;
         gameOver = false;
         update();
@@ -65,6 +70,16 @@ public class Game {
         log = source.log;
     }
 
+    public static boolean isOffenceMove(byte cell, byte d, byte targetCell, byte[] state) {
+        byte force = 0;
+        while (++force <= 3 && targetCell != -1 && state[targetCell] == state[cell]) {
+            targetCell = TransitionMatrix[targetCell][d];
+        }
+        if (force > 3 || targetCell == -1) return false;
+        int[] counterForce = getForce(targetCell, d, state);
+        return force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]);
+    }
+
     public static byte isValidMove(byte cell, byte d, byte n, byte[] state) {
         if (state[cell] == 0) return (byte) -1;
         byte targetCell = TransitionMatrix[cell][d];
@@ -76,9 +91,9 @@ public class Game {
             if (state[targetCell] != 0) return -1;
             byte ssd = d;
             if (++ssd == 6) ssd = 0;
-            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 6 : (byte) 7;
+            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 3 : (byte) 7;
             if (++ssd == 6) ssd = 0;
-            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 6 : (byte) 7;
+            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 3 : (byte) 7;
             return -1;
         }
     }
@@ -120,9 +135,9 @@ public class Game {
         if (force > 3 || targetCell == -1) return (byte) -1;
         int[] counterForce = getForce(targetCell, d, state);
         if (!(force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]))) return -1;
-        if (counterForce[0] == -1) return (force == 3) ? 0 : (byte) 1; // capturing
-        if (counterForce[1] == 0) return (force == 3) ? (byte) 4 : (byte) 5; // inline
-        return (force == 3) ? (byte) 2 : (byte) 3; // attacking
+        if (counterForce[0] == -1) return (force == 3) ? 0 : (byte) 4; // capturing
+        if (counterForce[1] == 0) return (force == 3) ? (byte) 2 : (byte) 6; // inline
+        return (force == 3) ? (byte) 1 : (byte) 5; // attacking
     }
 
     public static void move(byte cell, byte d, byte n, byte[] state) {
@@ -277,7 +292,20 @@ public class Game {
         if (humanSide == 0 && ai == this.counter) total2 += used;
         String s = (ai == this.ai) ? String.valueOf(total) : String.valueOf(total2);
         String t = String.valueOf(used);
-        turnLeft--;
+
+        if (testMode && ai == this.ai) {
+            start = System.currentTimeMillis();
+            byte[] best2 = tester.getBestMove(turnLeft, aiTime, state);
+            end = System.currentTimeMillis();
+            double used2 = (double) (end - start) / 1000;
+            if (best[0] != best2[0] || best[1] != best2[1] || best[2] != best2[2]) {
+                System.out.println("                                    BUG                                  CATCH:                               ");
+                System.out.println("                                    Tester:                         " + Game.moveToString(best2, state));
+            }
+            if (Math.abs(used2 - used) > 0.05)
+                System.out.format("Performance improved: %5fs, TestAI used: %5fs\n", (used2 - used), used2);
+        }
+
         String moved = Game.moveToString(best, state);
         System.out.println((ai.side == 1 ? "WHITE" : "BLACK") + " AI "
                 + ai.name + " moved: " + moved + "Turn Left: " + turnLeft
@@ -288,6 +316,7 @@ public class Game {
                 + ": " + moved
                 + "\tTime: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s"
                 + "\tTotal Time: " + (s.length() > 6 ? s.substring(0, 6) : s) + "s");
+        turnLeft--;
         move(best[0], best[1], best[2], state);
     }
 
@@ -506,19 +535,19 @@ public class Game {
                 sb.append(x--).append(' ');
             }
 
-            char a = ' ';
-            switch (aState) {
-                case -1:
-                    a = '@';
-                    break;
-                case 0:
-                    a = '+';
-                    break;
-                case 1:
-                    a = 'O';
-                    break;
-            }
-            sb.append(a).append(' ');
+//            char a = ' ';
+//            switch (aState) {
+//                case -1:
+//                    a = '@';
+//                    break;
+//                case 0:
+//                    a = '+';
+//                    break;
+//                case 1:
+//                    a = 'O';
+//                    break;
+//            }
+            sb.append(String.valueOf(aState)).append(' ');
             n++;
             if (n == m) {
                 if (n != 9 && !decre) sb.append(y--);

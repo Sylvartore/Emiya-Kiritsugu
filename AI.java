@@ -4,13 +4,16 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class AI {
-
+    long count;
     byte side;
     byte counterSide;
     String name;
     byte[] bestMove_cur;
     int max_cur;
     byte[] state;
+    int depth;
+    int sum;
+    int c;
 
     public AI(byte side) {
         this(side, "Main");
@@ -18,13 +21,13 @@ public class AI {
 
     public AI(byte side, String name) {
         this.side = side;
-        this.counterSide = (byte) (-1 * side);
+        this.counterSide = side == 1 ? (byte) -1 : 1;
         this.name = name;
     }
 
     public void changeTo(byte side) {
         this.side = side;
-        this.counterSide = (byte) (-1 * side);
+        this.counterSide = side == 1 ? (byte) -1 : 1;
     }
 
     static List<byte[]> getAllOffensiveMoves(byte side, byte[] state) {
@@ -62,73 +65,49 @@ public class AI {
     }
 
     byte[] getBestMove(int turnLeft, int aiTime, byte[] state) {
-        int max = Integer.MIN_VALUE, actual_depth = 0;
-        int depth = 2;
         this.state = state;
+        depth = 3;
         byte[] bestMove = null;
-        long left = aiTime, last, limit = System.currentTimeMillis() + aiTime;
+        long last, limit = System.currentTimeMillis() + aiTime;
         do {
-            if (depth > turnLeft && depth != 2 || (depth == 7 && aiTime <= 5000)) break;
+            if (depth > turnLeft && depth != 3 || (depth == 7 && aiTime <= 5000)) break;
             long start = System.currentTimeMillis();
             bestMove_cur = null;
             max_cur = Integer.MIN_VALUE;
             ExecutorService executor = Executors.newFixedThreadPool(4);
             List<byte[]> moves = getAllPossibleMoves(side, state);
             for (byte[] move : moves) {
-                executor.execute(new Job(move, depth - 1, turnLeft - 1));
+                executor.execute(() -> {
+                    byte[] copy = new byte[state.length];
+                    System.arraycopy(state, 0, copy, 0, state.length);
+                    Game.move(move[0], move[1], move[2], copy);
+                    int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth, turnLeft);
+                    synchronized (this) {
+                        if (utility > max_cur) {
+                            max_cur = utility;
+                            bestMove_cur = move;
+                        }
+                    }
+                });
             }
             try {
                 executor.shutdown();
                 if (!executor.awaitTermination(limit - System.currentTimeMillis(), TimeUnit.MILLISECONDS)) {
-                    System.out.println("EXIT        IN          ADVANCE");
                     break;
                 }
-                executor.awaitTermination(1, TimeUnit.DAYS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            actual_depth = depth;
             last = System.currentTimeMillis() - start;
-            left -= last;
             depth++;
-            max = max_cur;
             bestMove = bestMove_cur;
-        } while (left > last * 6);
-        log(bestMove, actual_depth, max, state);
+        } while (limit - System.currentTimeMillis() > last * 8);
         return bestMove;
     }
 
-    class Job implements Runnable {
-        byte[] move;
-        int depth;
-        int turnLeft;
-
-        public Job(byte[] move, int depth, int turnLeft) {
-            this.move = move;
-            this.depth = depth;
-            this.turnLeft = turnLeft;
-        }
-
-
-        @Override
-        public void run() {
-            byte[] copy = new byte[state.length];
-            System.arraycopy(state, 0, copy, 0, state.length);
-            Game.move(move[0], move[1], move[2], copy);
-            int utility = min(copy, Integer.MIN_VALUE, Integer.MAX_VALUE, depth, turnLeft);
-            synchronized (this) {
-                if (bestMove_cur == null || utility > max_cur) {
-                    max_cur = utility;
-                    bestMove_cur = move;
-                }
-            }
-        }
-    }
-
-
     int min(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return heuristic3(state);
+            return belgian(state);
         }
         int value = Integer.MAX_VALUE;
         for (byte[] move : getAllPossibleMoves(counterSide, state)) {
@@ -145,7 +124,7 @@ public class AI {
 
     int max(byte[] state, int alpha, int beta, int depth, int turn) {
         if (depth == 0 || turn == 0) {
-            return heuristic3(state);
+            return belgian(state);
         }
         int value = Integer.MIN_VALUE;
         for (byte[] move : getAllPossibleMoves(side, state)) {
@@ -160,42 +139,36 @@ public class AI {
         return value;
     }
 
-    int check(byte cell, byte[] state) {
-        int val = 0, a = 0;
-        for (byte dir = 0; dir < 6; dir++) {
-            byte next = Game.TransitionMatrix[cell][dir];
-            if (next == -1) continue;
-            if (state[next] == state[cell]) {
-                ++val;
-                ++a;
-            }
-            for (byte n = 1; n <= 3; n++) {
-                byte order = Game.isValidMove(cell, dir, n, state);
-                if (order >= 0 && order <= 3) {
-                    val += (4 - order) * 2;
-                }
-            }
+    int check(int i, byte[] state) {
+        int h = central_weight[i];
+        for (byte dir = 0; dir < 3; dir++) {
+            byte next = Game.TransitionMatrix[i][dir];
+            byte counter = Game.TransitionMatrix[i][Game.CounterDirection[dir]];
+            if (next == -1 && counter == -1) continue;
+            h += next != -1 && state[next] == state[i] ? 1 : 0;
+            h += counter != -1 && state[counter] == state[i] ? 1 : 0;
+            h += next != -1 && counter != -1 && state[next] == state[counter] && state[next] != 0 ? 1 : 0;
         }
-        if (a == 6) val += 2;
-        return val;
+        return h;
     }
 
-    int heuristic3(byte[] state) {
-        int a = 0, e = 0, heuristic_value = 0;
+    int belgian(byte[] state) {
+        int a = 0, e = 0, ah = 0, eh = 0;
         for (byte i = 0; i < state.length; i++) {
             if (state[i] == 0) continue;
             if (state[i] == side) {
-                a += 1;
-                heuristic_value += 100 + central_weight[i] * 3 + check(i, state) * 2;
+                a++;
+                ah += 100 + check(i, state);
             } else {
-                e += 1;
-                heuristic_value -= 100 + central_weight[i] * 3 + check(i, state) * 2;
+                e++;
+                eh += 100 + check(i, state);
             }
         }
-        if (a <= 8) return -999999;
-        if (e <= 8) return 999999;
-        if (e <= 9 && a > 9) heuristic_value += 1000;
-        return (a - e) * 100 + heuristic_value;
+        if (a <= 8) return -1000000;
+        if (e <= 8) return 1000000;
+        if (e <= 9 && a > 9) ah += 1000;
+        ah *= 1.1;
+        return ah - eh;
     }
 
     int group_check(int cell, byte[] state) {
@@ -216,20 +189,20 @@ public class AI {
             if (state[i] == 0) continue;
             if (state[i] == side) {
                 a += 1;
-                heuristic_value += central_weight[i] + group_check(i, state);
+                heuristic_value += central_weight[i];//+ group_check(i, state);
             } else {
                 e += 1;
-                heuristic_value -= central_weight[i] + group_check(i, state);
+                heuristic_value -= central_weight[i];//+ group_check(i, state);
             }
         }
-        if (a <= 8) return -999999;
-        if (e <= 8) return 999999;
-        if (e <= 9 && a > 9) heuristic_value += 1000;
+//        if (a <= 8) return -999999;
+//        if (e <= 8) return 999999;
+//        if (e <= 9 && a > 9) heuristic_value += 1000;
         return (a - e) * 100 + heuristic_value;
     }
 
 
-    int heuristic2(byte[] state) {
+    int gaara(byte[] state) {
         int a = 0, e = 0, heuristic_value = 0;
         for (int i = 0; i < state.length; i++) {
             if (state[i] == 0) continue;
@@ -244,7 +217,7 @@ public class AI {
         if (a <= 8) return -999999;
         if (e <= 8) return 999999;
         if (e <= 9 && a > 9) heuristic_value += 1000;
-        return (a - e) * 200 + heuristic_value;
+        return (a - e) * 300 + heuristic_value;
     }
 
     static int adjacency_check(int cell, byte[] state) {
@@ -258,47 +231,11 @@ public class AI {
         return score;
     }
 
-
-//    int ad(int cell, byte[] state) {
-//        int score = 0;
-//        for (int i = 3; i < 6; i++) {
-//            byte adjacent_cell = Game.TransitionMatrix[cell][i];
-//            if (adjacent_cell != -1 && state[adjacent_cell] == state[cell]) {
-//                score += 1;
-//            }
-//        }
-//        return score;
-//    }
-
     void log(byte[] move, int depth, int max, byte[] state) {
         System.out.println((side == 1 ? "WHITE " : "BLACK ") + name + " AI moved: "
                 + Game.moveToString(move, state)
                 + "     max depth: " + depth + ",    best node found: " + max);
     }
-
-//    static byte[] central_weight = {
-//            0, 0, 0, 0, 0,
-//            0, 2, 2, 2, 2, 0,
-//            0, 2, 3, 3, 3, 2, 0,
-//            0, 2, 3, 4, 4, 3, 2, 0,
-//            0, 2, 3, 5, 6, 5, 3, 2, 0,
-//            0, 2, 3, 4, 4, 3, 2, 0,
-//            0, 2, 3, 3, 3, 2, 0,
-//            0, 2, 2, 2, 2, 0,
-//            0, 0, 0, 0, 0,
-//    };
-
-    static byte[] central_weight = {
-            0, 0, 0, 0, 0,
-            0, 3, 3, 3, 3, 0,
-            0, 3, 5, 5, 5, 3, 0,
-            0, 3, 5, 7, 7, 5, 3, 0,
-            0, 3, 5, 7, 9, 7, 5, 3, 0,
-            0, 3, 5, 7, 7, 5, 3, 0,
-            0, 3, 5, 5, 5, 3, 0,
-            0, 3, 3, 3, 3, 0,
-            0, 0, 0, 0, 0,
-    };
 
     byte[][] stand = new byte[][]{
             {56, 2, 1, 4},
@@ -364,4 +301,32 @@ public class AI {
         }
         return value;
     }
+
+    int cc = 0;
+    int bc = 0;
+    int sum2 = 0;
+
+//    public static final int[] central_weight = new int[]{
+//            1, 1, 1, 1, 1,
+//            1, 2, 2, 2, 2, 1,
+//            1, 2, 3, 3, 3, 2, 1,
+//            1, 2, 3, 4, 4, 3, 2, 1,
+//            1, 2, 3, 4, 5, 4, 3, 2, 1,
+//            1, 2, 3, 4, 4, 3, 2, 1,
+//            1, 2, 3, 3, 3, 2, 1,
+//            1, 2, 2, 2, 2, 1,
+//            1, 1, 1, 1, 1,
+//    };
+
+    public static final int[] central_weight = new int[]{
+            5, 5, 5, 5, 5,
+            5, 14, 14, 14, 14, 5,
+            5, 14, 21, 21, 21, 14, 5,
+            5, 14, 21, 28, 28, 21, 14, 5,
+            5, 14, 21, 28, 35, 28, 21, 14, 5,
+            5, 14, 21, 28, 28, 21, 14, 5,
+            5, 14, 21, 21, 21, 14, 5,
+            5, 14, 14, 14, 14, 5,
+            5, 5, 5, 5, 5,
+    };
 }
