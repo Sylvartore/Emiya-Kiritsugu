@@ -1,3 +1,6 @@
+//
+// Created by Sylvartore on 3/8/2019.
+//
 package sylvartore;
 
 import javafx.application.Platform;
@@ -22,12 +25,35 @@ public class HumanClickListener implements EventHandler<MouseEvent> {
             return;
         }
         if (game.state[id] != game.humanSide) return;
-        String[] choices = {"Cancel", "Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown"};
+        String[] choices = {"Cancel", "Left", "LeftUp", "RightUp", "Right", "RightDown", "LeftDown", "Suicide-1", "Suicide-N"};
         String direction = (String) JOptionPane.showInputDialog(null, "Direction",
                 "Direction", JOptionPane.QUESTION_MESSAGE, null,
                 choices,
                 choices[0]);
         if (direction == null || direction.equals("Cancel")) return;
+        if (direction.equals("Suicide-N")) {
+            game.state[id] = 0;
+            game.update();
+            return;
+        }
+        if (direction.equals("Suicide-1")) {
+            game.state[id] = 0;
+            game.update();
+            game.ui.humanTurn = false;
+            game.ui.resetTime();
+            if (game.turnLeft == 0) {
+                System.out.println("game over");
+                return;
+            }
+            (new Thread(() -> {
+                game.aiMove(game.ai);
+                Platform.runLater(() -> game.update());
+                game.ui.humanTurn = true;
+                game.ui.resetTime();
+                game.aiFinished = System.currentTimeMillis();
+            })).start();
+            return;
+        }
         byte d = 0;
         for (byte i = 1; i < choices.length; i++) {
             if (choices[i].equals(direction)) d = (byte) (i - 1);
