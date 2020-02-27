@@ -1,3 +1,6 @@
+//
+// Created by Sylvartore on 3/8/2019.
+//
 package sylvartore;
 
 import javafx.application.Application;
@@ -27,6 +30,7 @@ public class UI extends Application {
     Label ws;
     int humanTime;
     boolean humanTurn;
+    int mode;
 
     public static void main(String[] args) {
         launch(args);
@@ -38,6 +42,7 @@ public class UI extends Application {
         pause = true;
         humanTurn = true;
         time = 0;
+        mode = 0;
         humanTime = 60;
         root = new VBox();
         board = new GridPane();
@@ -63,7 +68,7 @@ public class UI extends Application {
     void add_btn() {
         HBox btnRow = new HBox();
         add_standard(btnRow);
-        add_bei(btnRow);
+        add_bel(btnRow);
         add_ger(btnRow);
         add_start(btnRow);
         add_ava(btnRow);
@@ -92,8 +97,8 @@ public class UI extends Application {
         file_log.setOnMouseClicked(event -> game.outputLog(false));
         loggerRow.getChildren().add(file_log);
 
-        switch_qui(loggerRow);
-        switch_main(loggerRow);
+//        switch_qui(loggerRow);
+//        switch_main(loggerRow);
         root.getChildren().add(loggerRow);
     }
 
@@ -141,6 +146,7 @@ public class UI extends Application {
         AivAi.setText("AI vs AI");
         AivAi.setPrefWidth(120);
         AivAi.setOnMouseClicked(event -> {
+            System.out.println("AI vs AI start: ");
             humanTurn = false;
             game.humanSide = 0;
             if (game.ai.side == -1) {
@@ -151,29 +157,6 @@ public class UI extends Application {
         });
         btnRow.getChildren().add(AivAi);
     }
-
-    void switch_qui(HBox btnRow) {
-        Button quies = new Button();
-        quies.setText("Gaara");
-        quies.setPrefWidth(120);
-        quies.setOnMouseClicked(event -> {
-            game.ai = new Gaara(game.ai.side);
-            System.out.println("Gaara is up!");
-        });
-        btnRow.getChildren().add(quies);
-    }
-
-    void switch_main(HBox btnRow) {
-        Button main = new Button();
-        main.setText("Main");
-        main.setPrefWidth(120);
-        main.setOnMouseClicked(event -> {
-            game.ai = new AI(game.ai.side, "Main");
-            System.out.println("switch to M");
-        });
-        btnRow.getChildren().add(main);
-    }
-
 
     void mainAiMove() {
         (new Thread(() -> {
@@ -233,7 +216,12 @@ public class UI extends Application {
                 System.out.println("can't reset while ai running");
                 return;
             }
-            game.state = Game.getStandardInitialLayout();
+            if (mode == 0)
+                game.state = Game.getStandardInitialLayout();
+            if (mode == 1)
+                game.state = Game.getBelgianDaisyLayout();
+            if (mode == 2)
+                game.state = Game.getGermanDaisyLayout();
             game.reset();
             pause = true;
             humanTurn = true;
@@ -247,7 +235,7 @@ public class UI extends Application {
 
     void add_time_limit(HBox textRow) {
         TextField timeLimit = new TextField();
-        timeLimit.setText("5000");
+        timeLimit.setText("10000");
         textRow.getChildren().add(timeLimit);
 
         Button setTimeLimit = new Button();
@@ -280,7 +268,7 @@ public class UI extends Application {
 
     void add_turn_limit(HBox textRow) {
         TextField turnLimit = new TextField();
-        turnLimit.setText("100");
+        turnLimit.setText("80");
         textRow.getChildren().add(turnLimit);
 
         Button setTurn = new Button();
@@ -359,17 +347,19 @@ public class UI extends Application {
         standard.setOnMouseClicked(event -> {
             game.state = Game.getStandardInitialLayout();
             game.reset();
+            mode = 0;
         });
         btnRow.getChildren().add(standard);
     }
 
-    void add_bei(HBox btnRow) {
+    void add_bel(HBox btnRow) {
         Button bel = new Button();
         bel.setText("BelgianDaisy");
         bel.setPrefWidth(100);
         bel.setOnMouseClicked(event -> {
             game.state = Game.getBelgianDaisyLayout();
             game.reset();
+            mode = 1;
         });
         btnRow.getChildren().add(bel);
     }
@@ -381,6 +371,7 @@ public class UI extends Application {
         ger.setOnMouseClicked(event -> {
             game.state = Game.getGermanDaisyLayout();
             game.reset();
+            mode = 2;
         });
         btnRow.getChildren().add(ger);
     }

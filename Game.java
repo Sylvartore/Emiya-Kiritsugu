@@ -1,11 +1,13 @@
+//
+// Created by Sylvartore on 3/5/2019.
+//
 package sylvartore;
 
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Game {
     byte state[];
@@ -21,20 +23,18 @@ public class Game {
     UI ui;
     ArrayList<String> log;
     long aiFinished;
-    static Zobrist z = new Zobrist();
 
     public Game() {
         state = new byte[61];
         humanSide = 0;
         total = 0;
         total2 = 0;
-        turnLeft = 100;
-        aiTime = 5000;
+        turnLeft = 80;
+        aiTime = 10000;
         prev = null;
         log = new ArrayList<>();
-        //   ai = new AI((byte) -1, "Main");
-        ai = new AI((byte) -1, "Main");
-        counter = new Gaara((byte) 1);
+        ai = new AI((byte) 1);
+        counter = new AI((byte) -1);
         gameOver = false;
     }
 
@@ -42,8 +42,8 @@ public class Game {
         humanSide = 0;
         total = 0;
         total2 = 0;
-        aiTime = 5000;
-        turnLeft = 100;
+        aiTime = 10000;
+        turnLeft = 80;
         prev = null;
         gameOver = false;
         update();
@@ -76,9 +76,9 @@ public class Game {
             if (state[targetCell] != 0) return -1;
             byte ssd = d;
             if (++ssd == 6) ssd = 0;
-            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 6 : (byte) 7;
+            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 3 : (byte) 7;
             if (++ssd == 6) ssd = 0;
-            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 6 : (byte) 7;
+            if (canSideStep(cell, d, n, ssd, state)) return n == 3 ? (byte) 3 : (byte) 7;
             return -1;
         }
     }
@@ -120,9 +120,9 @@ public class Game {
         if (force > 3 || targetCell == -1) return (byte) -1;
         int[] counterForce = getForce(targetCell, d, state);
         if (!(force > counterForce[1] && (counterForce[0] == -1 || state[counterForce[0]] != state[cell]))) return -1;
-        if (counterForce[0] == -1) return (force == 3) ? 0 : (byte) 1; // capturing
-        if (counterForce[1] == 0) return (force == 3) ? (byte) 4 : (byte) 5; // inline
-        return (force == 3) ? (byte) 2 : (byte) 3; // attacking
+        if (counterForce[0] == -1) return (force == 3) ? 0 : (byte) 4; // capturing
+        if (counterForce[1] == 0) return (force == 3) ? (byte) 2 : (byte) 6; // inline
+        return (force == 3) ? (byte) 1 : (byte) 5; // attacking
     }
 
     public static void move(byte cell, byte d, byte n, byte[] state) {
@@ -271,6 +271,10 @@ public class Game {
         if (gameOver) return;
         long start = System.currentTimeMillis();
         byte[] best = ai.getBestMove(turnLeft, aiTime, state);
+        if(best == null) {
+            System.out.println("Not enough time for AI to get a move");
+            System.exit(0);
+        }
         long end = System.currentTimeMillis();
         double used = (double) (end - start) / 1000;
         if (ai == this.ai) total += used;
@@ -280,14 +284,14 @@ public class Game {
         turnLeft--;
         String moved = Game.moveToString(best, state);
         System.out.println((ai.side == 1 ? "WHITE" : "BLACK") + " AI "
-                + ai.name + " moved: " + moved + "Turn Left: " + turnLeft
+                + ai.name + " moved: " + moved + " Turn Left: " + turnLeft
                 + " Used: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s Total: " +
                 (s.length() > 6 ? s.substring(0, 6) : s) + "s\n");
         log.add("Turn Left: " + turnLeft
                 + "\t" + (humanSide == -1 ? "WHITE" : "BLACK")
                 + ": " + moved
                 + "\tTime: " + (t.length() > 6 ? t.substring(0, 6) : t) + "s"
-                + "\tTotal Time: " + (s.length() > 6 ? s.substring(0, 6) : s) + "s");
+                + "\tTotal Time: " + (s.length() > 6 ? s.substring(0, 6) : s) + "s\n");
         move(best[0], best[1], best[2], state);
     }
 
@@ -488,12 +492,12 @@ public class Game {
             "A1", "A2", "A3", "A4", "A5"
     };
 
-    public static void print(byte[] state) {
+    public static void print(int[] state) {
         StringBuilder sb = new StringBuilder();
         int spaces = 4, n = 0, m = 5;
         boolean decre = true;
         char x = 'I', y = '9';
-        for (byte aState : state) {
+        for (int aState : state) {
             if (n == m) {
                 sb.append('\n');
                 n = 0;
@@ -506,19 +510,19 @@ public class Game {
                 sb.append(x--).append(' ');
             }
 
-            char a = ' ';
-            switch (aState) {
-                case -1:
-                    a = '@';
-                    break;
-                case 0:
-                    a = '+';
-                    break;
-                case 1:
-                    a = 'O';
-                    break;
-            }
-            sb.append(a).append(' ');
+//            char a = ' ';
+//            switch (aState) {
+//                case -1:
+//                    a = '@';
+//                    break;
+//                case 0:
+//                    a = '+';
+//                    break;
+//                case 1:
+//                    a = 'O';
+//                    break;
+//            }
+            sb.append(String.valueOf(aState)).append(' ');
             n++;
             if (n == m) {
                 if (n != 9 && !decre) sb.append(y--);
