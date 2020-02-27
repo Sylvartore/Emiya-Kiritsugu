@@ -13,6 +13,8 @@ Emiya-Kiritsugu won the 6 out of total 6 games.
 
 # To run executable: 
 Distribution build is in the dist/
+
 Open command line and enter:
+		
 		java -jar abalone.jar
 
