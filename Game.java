@@ -271,16 +271,13 @@ public class Game {
         if (gameOver) return;
         long start = System.currentTimeMillis();
         byte[] best = ai.getBestMove(turnLeft, aiTime, state);
-        if(best == null) {
-            System.out.println("Not enough time for AI to get a move");
-            System.exit(0);
-        }
         long end = System.currentTimeMillis();
         double used = (double) (end - start) / 1000;
         if (ai == this.ai) total += used;
         if (humanSide == 0 && ai == this.counter) total2 += used;
         String s = (ai == this.ai) ? String.valueOf(total) : String.valueOf(total2);
         String t = String.valueOf(used);
+
         turnLeft--;
         String moved = Game.moveToString(best, state);
         System.out.println((ai.side == 1 ? "WHITE" : "BLACK") + " AI "
